@@ -12,7 +12,7 @@ use swaggapi::handler::Handler;
 #[derive(Deserialize, JsonSchema)]
 pub struct SubmitForm {}
 
-#[swaggapi::operation(Get "" "/submit")]
+#[swaggapi::get("", "/submit")]
 pub async fn submit(_form: Form<SubmitForm>) -> &'static str {
     "YaY"
 }
@@ -29,7 +29,7 @@ pub type JsonResponse = JsonBody;
 /// Huiii
 ///
 /// wow some explanation
-#[swaggapi::operation(Post "" "/json")]
+#[swaggapi::post("", "/json")]
 pub async fn json(_json: Json<JsonBody>) -> Json<JsonResponse> {
     todo!()
 }

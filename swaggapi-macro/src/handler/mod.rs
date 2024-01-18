@@ -1,22 +1,50 @@
-use proc_macro2::{Literal, TokenStream};
+use proc_macro2::{Ident, Literal, TokenStream};
+use proc_macro2::{Span, TokenTree};
 use quote::{format_ident, quote, ToTokens};
-use syn::{parse2, FnArg, ItemFn, Meta, MetaNameValue, ReturnType};
+use syn::{FnArg, ItemFn, Meta, MetaNameValue, ReturnType};
 
-pub fn operation(args: TokenStream, tokens: TokenStream) -> TokenStream {
-    let Ok(ItemFn {
-        attrs,
-        vis,
-        sig,
-        block: _,
-    }) = parse2(tokens.clone())
-    else {
-        return tokens;
+mod parse;
+
+pub fn handler(
+    args: TokenStream,
+    tokens: TokenStream,
+    method: Option<&'static str>,
+) -> TokenStream {
+    let (
+        parse::Args {
+            positional,
+            mut keyword,
+        },
+        ItemFn {
+            attrs,
+            vis,
+            sig,
+            block: _,
+        },
+    ) = match parse::parse(args, tokens.clone()) {
+        Ok(x) => x,
+        Err(err) => {
+            return quote! {
+                #err
+                #tokens
+            }
+        }
     };
 
-    let mut args = args.into_iter();
-    let method = args.next().unwrap();
-    let ctx_path = args.next().unwrap();
-    let path = args.next().unwrap();
+    let mut positional = positional.into_iter();
+    let method = method
+        .map(|str| TokenTree::Ident(Ident::new(str, Span::call_site())))
+        .or_else(|| keyword.remove(&Ident::new("method", Span::call_site())))
+        .or_else(|| positional.next())
+        .unwrap();
+    let ctx_path = keyword
+        .remove(&Ident::new("context_path", Span::call_site()))
+        .or_else(|| positional.next())
+        .unwrap();
+    let path = keyword
+        .remove(&Ident::new("path", Span::call_site()))
+        .or_else(|| positional.next())
+        .unwrap();
 
     let func_ident = &sig.ident;
     let module_ident = format_ident!("__{}_module", sig.ident);

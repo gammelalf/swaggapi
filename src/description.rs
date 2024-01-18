@@ -41,6 +41,7 @@ impl OperationDescription {
             external_docs: Default::default(),
             servers: Default::default(),
             extensions: Default::default(),
+            callbacks: Default::default(),
         }
     }
 }

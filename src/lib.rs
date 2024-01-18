@@ -9,7 +9,7 @@ pub mod handler_argument;
 mod method;
 
 pub use convert::convert_schema;
-pub use swaggapi_macro::operation;
+pub use swaggapi_macro::*;
 
 pub use self::description::OperationDescription;
 pub use self::method::Method;
@@ -23,7 +23,7 @@ pub mod re_exports {
     pub use {indexmap, openapiv3, schemars};
 }
 
-use openapiv3::OpenAPI;
+use openapiv3::{OpenAPI, Operation, Parameter, ReferenceOr, RequestBody, Responses};
 
 trait SwaggapiPage {
     fn builder() -> &'static SwaggapiPageBuilder;

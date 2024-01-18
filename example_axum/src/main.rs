@@ -4,7 +4,7 @@ use axum::Router;
 use swaggapi::handler::RouterExt;
 use tokio::net::TcpListener;
 
-#[swaggapi::operation(Get "" "/index")]
+#[swaggapi::get("", "/index")]
 pub async fn index() -> &'static str {
     "Hello World"
 }
