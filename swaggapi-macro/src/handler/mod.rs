@@ -110,12 +110,15 @@ pub fn handler(
                 let mut request_body = Vec::new();
 
                 #(
-                    parameters.extend(
-                        <#argument_type as ::swaggapi::handler_argument::HandlerArgument>::parameters(gen)
-                    );
-                    request_body.extend(
-                        <#argument_type as ::swaggapi::handler_argument::HandlerArgument>::request_body(gen)
-                    );
+                    let probe = ::swaggapi::handler_argument::macro_helper::TraitProbe::<#argument_type>::new();
+                    if probe.should_be_handler_argument() {
+                        ::swaggapi::handler_argument::macro_helper::add_handler_argumment(
+                            probe.get_handler_argument(),
+                            gen,
+                            &mut parameters,
+                            &mut request_body
+                        );
+                    }
                 )*
 
                 ::swaggapi::OperationDescription {
