@@ -9,6 +9,7 @@ use crate::handler::Handler;
 macro_rules! impl_Foo_axum {
     ($ident:path: fn($($arg:ty),*) -> $ret:ty) => {
         fn axum(&self) -> $crate::re_exports::axum::routing::MethodRouter {
+            <$crate::PageOfEverything as $crate::SwaggapiPage>::builder().add_handler(self);
             $crate::re_exports::axum::routing::MethodRouter::new().on(self.method().axum(), $ident)
         }
     };

@@ -1,9 +1,12 @@
 use std::error::Error;
+use std::sync::Arc;
 
 use axum::{Json, Router};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use swaggapi::handler::RouterExt;
+use swaggapi::re_exports::openapiv3::OpenAPI;
+use swaggapi::{PageOfEverything, SwaggapiPage};
 use tokio::net::TcpListener;
 
 #[derive(Deserialize, JsonSchema)]
@@ -30,11 +33,18 @@ pub type JsonResponse = JsonBody;
 pub async fn json(_json: Json<JsonBody>) -> Json<JsonResponse> {
     todo!()
 }
+
+pub async fn openapi() -> Json<Arc<OpenAPI>> {
+    Json(PageOfEverything::builder().build())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let app = Router::new().routes(&[&index, &json]);
+    let app = Router::new()
+        .routes(&[&index, &json])
+        .route("/openapi", axum::routing::get(openapi));
 
-    let listener = TcpListener::bind("127.0.0.1:1337").await?;
+    let listener = TcpListener::bind("127.0.0.1:8080").await?;
     axum::serve(listener, app).await?;
 
     Ok(())

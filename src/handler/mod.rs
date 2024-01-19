@@ -1,6 +1,6 @@
 use schemars::gen::SchemaGenerator;
 
-use crate::{Method, OperationDescription};
+use crate::{Method, OperationDescription, SwaggapiPageBuilder};
 
 #[cfg(feature = "actix")]
 mod actix;

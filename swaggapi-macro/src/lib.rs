@@ -1,6 +1,12 @@
 mod handler;
+mod page;
 
 use proc_macro::TokenStream;
+
+#[proc_macro_derive(SwaggapiPage)]
+pub fn derive_page(input: TokenStream) -> TokenStream {
+    page::page(input.into()).into()
+}
 
 #[proc_macro_attribute]
 pub fn handler(args: TokenStream, input: TokenStream) -> TokenStream {

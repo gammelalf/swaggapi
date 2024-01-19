@@ -1,13 +1,12 @@
-use std::collections::HashMap;
 use std::error::Error;
 
 use actix_web::web::{Form, Json};
 use actix_web::{App, HttpServer};
-use schemars::gen::{SchemaGenerator, SchemaSettings};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use swaggapi::convert_schema;
 use swaggapi::handler::Handler;
+use swaggapi::re_exports::openapiv3::OpenAPI;
+use swaggapi::{PageOfEverything, SwaggapiPage};
 
 #[derive(Deserialize, JsonSchema)]
 pub struct SubmitForm {}
@@ -34,26 +33,17 @@ pub async fn json(_json: Json<JsonBody>) -> Json<JsonResponse> {
     todo!()
 }
 
+#[actix_web::get("/openapi")]
+pub async fn openapi() -> Json<OpenAPI> {
+    Json(PageOfEverything::builder().build())
+}
+
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
 
-    let mut set = SchemaSettings::openapi3();
-    set.visitors = Vec::new();
-    let mut gen = SchemaGenerator::new(set);
-
-    serde_json::to_writer_pretty(std::io::stdout(), &submit.description(&mut gen).build()).unwrap();
-    serde_json::to_writer_pretty(std::io::stdout(), &json.description(&mut gen).build()).unwrap();
-
-    let components: HashMap<_, _> = gen
-        .take_definitions()
-        .into_iter()
-        .map(|(k, v)| (k, convert_schema(v)))
-        .collect();
-    serde_json::to_writer_pretty(std::io::stdout(), &components).unwrap();
-
-    HttpServer::new(|| App::new().service(submit.as_dyn()).service(json.as_dyn()))
-        .bind("127.0.0.1:1337")?
+    HttpServer::new(|| App::new().service(submit).service(json).service(openapi))
+        .bind(("127.0.0.1", 8080))?
         .run()
         .await?;
 
