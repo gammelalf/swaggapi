@@ -96,40 +96,32 @@ pub fn handler(
             #tokens
         }
         impl ::swaggapi::handler::Handler for #func_ident {
-            fn method(&self) -> ::swaggapi::Method {
-                ::swaggapi::Method::#method
-            }
-            fn path(&self) -> &'static str {
-                #path
-            }
-            fn ctx_path(&self) -> &'static str {
-                #ctx_path
-            }
-            fn description(&self, gen: &mut ::swaggapi::re_exports::schemars::gen::SchemaGenerator) -> ::swaggapi::OperationDescription {
-                let mut parameters = Vec::new();
-                let mut request_body = Vec::new();
+            fn description(&self) -> ::swaggapi::handler::HandlerDescription {
+                const N: usize =  0 #(+ {let _ = stringify!(#argument_type); 1})*;
+                static FNS: ::std::sync::OnceLock<
+                    [::std::option::Option<::swaggapi::handler_argument::HandlerArgumentFns>; N],
+                > = ::std::sync::OnceLock::new();
+                let handler_arguments = FNS.get_or_init(|| [#(
+                    ::swaggapi::handler_argument::macro_helper::TraitProbe::<#argument_type>::new().get_handler_argument_fns(),
+                )*]);
 
-                #(
-                    let probe = ::swaggapi::handler_argument::macro_helper::TraitProbe::<#argument_type>::new();
-                    if probe.should_be_handler_argument() {
-                        ::swaggapi::handler_argument::macro_helper::add_handler_argumment(
-                            probe.get_handler_argument(),
-                            gen,
-                            &mut parameters,
-                            &mut request_body
-                        );
-                    }
-                )*
+                const _: fn() = || {#(
+                    ::swaggapi::handler_argument::macro_helper::check_handler_argument(
+                        ::swaggapi::handler_argument::macro_helper::TraitProbe::<#argument_type>::new().get_handler_argument()
+                    );
+                )*};
 
-                ::swaggapi::OperationDescription {
+                ::swaggapi::handler::HandlerDescription {
+                    method: ::swaggapi::Method::#method,
+                    path: #path,
+                    ctx_path: #ctx_path,
                     deprecated: #deprecated,
                     doc: &[#(
                         #doc,
                     )*],
                     ident: #ident,
-                    responses: <#return_type as ::swaggapi::as_responses::AsResponses>::responses(gen),
-                    request_body,
-                    parameters,
+                    responses: <#return_type as ::swaggapi::as_responses::AsResponses>::responses,
+                    handler_arguments: &[],
                 }
             }
             ::swaggapi::impl_Foo_actix!(

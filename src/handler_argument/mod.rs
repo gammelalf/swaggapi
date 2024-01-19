@@ -8,6 +8,7 @@ use mime::Mime;
 use openapiv3::{MediaType, Parameter, ReferenceOr, RequestBody, Schema};
 use schemars::gen::SchemaGenerator;
 
+/// Marker trait
 pub trait ShouldBeHandlerArgument {}
 
 /// A type used as argument to a handler which can be described
@@ -31,6 +32,13 @@ pub trait HandlerArgument: ShouldBeHandlerArgument {
     fn parameters(_gen: &mut SchemaGenerator) -> Vec<Parameter> {
         Vec::new()
     }
+}
+
+/// Struct representation of a [`HandlerArgument`]
+#[derive(Eq, PartialEq, Copy, Clone)]
+pub struct HandlerArgumentFns {
+    pub(crate) request_body: fn(&mut SchemaGenerator) -> Option<RequestBody>,
+    pub(crate) parameters: fn(&mut SchemaGenerator) -> Vec<Parameter>,
 }
 
 /// Helper function for building a simple [`RequestBody`]
@@ -62,20 +70,11 @@ pub mod macro_helper {
     use std::marker::PhantomData;
     use std::ops::Deref;
 
-    use openapiv3::{Parameter, RequestBody};
-    use schemars::gen::SchemaGenerator;
+    use super::{HandlerArgument, HandlerArgumentFns, ShouldBeHandlerArgument};
 
-    use super::{HandlerArgument, ShouldBeHandlerArgument};
-
-    pub fn add_handler_argumment<T: HandlerArgument>(
-        _: Option<T>,
-        gen: &mut SchemaGenerator,
-        parameters: &mut Vec<Parameter>,
-        request_body: &mut Vec<RequestBody>,
-    ) {
-        parameters.extend(T::parameters(gen));
-        request_body.extend(T::request_body(gen));
-    }
+    /// Feed the result of `probe.get_handler_argument` to this function to check
+    /// if [`HandlerArgument`] is implemented for a [`ShouldBeHandlerArgument`] type
+    pub fn check_handler_argument<T: HandlerArgument>(_: Option<T>) {}
 
     impl<T> TraitProbe<T>
     where
@@ -97,6 +96,13 @@ pub mod macro_helper {
         pub fn is_handler_argument(&self) -> bool {
             true
         }
+
+        pub fn get_handler_argument_fns(&self) -> Option<HandlerArgumentFns> {
+            Some(HandlerArgumentFns {
+                request_body: T::request_body,
+                parameters: T::parameters,
+            })
+        }
     }
 
     impl Else {
@@ -105,6 +111,10 @@ pub mod macro_helper {
         }
 
         pub fn get_handler_argument(&self) -> Option<NotAnArgument> {
+            None
+        }
+
+        pub fn get_handler_argument_fns(&self) -> Option<HandlerArgumentFns> {
             None
         }
 

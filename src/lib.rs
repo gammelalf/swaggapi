@@ -1,9 +1,8 @@
-// #![warn(missing_docs)]
+#![warn(missing_docs)]
 #![warn(clippy::todo)]
 
 pub mod as_responses;
 mod convert;
-mod description;
 pub mod handler;
 pub mod handler_argument;
 mod method;
@@ -13,10 +12,10 @@ use std::mem;
 use std::sync::{Arc, Mutex};
 
 pub use convert::convert_schema;
+pub use handler::HandlerDescription;
 use indexmap::IndexMap;
 pub use swaggapi_macro::*;
 
-pub use self::description::OperationDescription;
 pub use self::method::Method;
 
 /// Reexports for macros and implementors
@@ -28,7 +27,7 @@ pub mod re_exports {
     pub use {indexmap, openapiv3, schemars};
 }
 
-use openapiv3::{Components, Info, OpenAPI, PathItem, Paths, ReferenceOr};
+use openapiv3::{Components, Info, OpenAPI, Operation, PathItem, Paths, ReferenceOr};
 use schemars::gen::{SchemaGenerator, SchemaSettings};
 use schemars::schema::Schema;
 
@@ -74,18 +73,60 @@ impl SwaggapiPageBuilder {
         let state = guard.get_or_insert_with(Default::default);
         state.last_build = None;
 
-        let operation = state
-            .generate_schema(|gen| handler.description(gen))
-            .build();
+        let desc = handler.description();
+
+        let (parameters, mut request_body, responses) = state.generate_schema(|gen| {
+            let mut parameters = Vec::new();
+            let mut request_body = Vec::new();
+            for arg in desc.handler_arguments {
+                if let Some(arg) = arg.as_ref() {
+                    parameters.extend(
+                        (arg.parameters)(&mut *gen)
+                            .into_iter()
+                            .map(ReferenceOr::Item),
+                    );
+                    request_body.extend((arg.request_body)(&mut *gen));
+                }
+            }
+            let responses = (desc.responses)(&mut *gen);
+            (parameters, request_body, responses)
+        });
+
+        let summary = desc.doc.get(0).map(|line| line.trim().to_string());
+        let description = summary.clone().map(|summary| {
+            desc.doc
+                .get(1..)
+                .unwrap_or(&[])
+                .iter()
+                .fold(summary, |text, line| format!("{text}\n{}", line.trim()))
+        });
+
+        let operation = Operation {
+            summary,
+            description,
+            operation_id: Some(desc.ident.to_string()),
+            parameters,
+            request_body: request_body.pop().map(ReferenceOr::Item),
+            responses,
+            deprecated: desc.deprecated,
+            security: None,   // TODO
+            tags: Vec::new(), // TODO
+            // Not supported:
+            external_docs: Default::default(),
+            servers: Default::default(),
+            extensions: Default::default(),
+            callbacks: Default::default(),
+        };
+
         let ReferenceOr::Item(path) = state
             .paths
             .paths
-            .entry(format!("{}/{}", handler.ctx_path(), handler.path()))
+            .entry(format!("{}/{}", desc.ctx_path, desc.path))
             .or_insert_with(|| ReferenceOr::Item(PathItem::default()))
         else {
             unreachable!("We only ever insert ReferenceOr::Item. See above")
         };
-        let operation_mut = match handler.method() {
+        let operation_mut = match desc.method {
             Method::Get => &mut path.get,
             Method::Post => &mut path.post,
             Method::Put => &mut path.put,

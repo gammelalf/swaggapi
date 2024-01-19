@@ -1,31 +1,24 @@
-use schemars::gen::SchemaGenerator;
-
-use crate::{Method, OperationDescription, SwaggapiPageBuilder};
-
 #[cfg(feature = "actix")]
 mod actix;
 #[cfg(feature = "axum")]
 mod axum;
+mod description;
+
 #[cfg(feature = "axum")]
 pub use axum::RouterExt;
+pub use description::HandlerDescription;
 
+/// A function annotated with [`#[swaggapi::get]`](swaggapi_macro::get) or one of its siblings.
 pub trait Handler {
-    fn method(&self) -> Method;
-    fn path(&self) -> &'static str;
-    fn ctx_path(&self) -> &'static str;
-    fn description(&self, gen: &mut SchemaGenerator) -> OperationDescription;
-
-    fn as_dyn(&self) -> &dyn Handler
-    where
-        Self: Sized,
-    {
-        self
-    }
+    /// Build the handler's description registering required schemas
+    fn description(&self) -> HandlerDescription;
 
     #[cfg(feature = "actix")]
+    #[doc(hidden)]
     fn actix(&self) -> ::actix_web::Route;
 
     #[cfg(feature = "axum")]
+    #[doc(hidden)]
     fn axum(&self) -> ::axum::routing::MethodRouter;
 }
 
