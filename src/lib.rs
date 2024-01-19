@@ -12,7 +12,7 @@ use std::mem;
 use std::sync::{Arc, Mutex};
 
 pub use convert::convert_schema;
-pub use handler::HandlerDescription;
+pub use handler::Handler;
 use indexmap::IndexMap;
 pub use swaggapi_macro::*;
 
@@ -30,8 +30,6 @@ pub mod re_exports {
 use openapiv3::{Components, Info, OpenAPI, Operation, PathItem, Paths, ReferenceOr};
 use schemars::gen::{SchemaGenerator, SchemaSettings};
 use schemars::schema::Schema;
-
-use crate::handler::Handler;
 
 #[derive(SwaggapiPage)]
 pub struct PageOfEverything;
@@ -68,17 +66,15 @@ impl SwaggapiPageBuilder {
         }
     }
 
-    pub fn add_handler(&self, handler: &impl Handler) {
+    pub fn add_handler(&self, handler: &Handler) {
         let mut guard = self.state.lock().unwrap();
         let state = guard.get_or_insert_with(Default::default);
         state.last_build = None;
 
-        let desc = handler.description();
-
         let (parameters, mut request_body, responses) = state.generate_schema(|gen| {
             let mut parameters = Vec::new();
             let mut request_body = Vec::new();
-            for arg in desc.handler_arguments {
+            for arg in handler.handler_arguments {
                 if let Some(arg) = arg.as_ref() {
                     parameters.extend(
                         (arg.parameters)(&mut *gen)
@@ -88,13 +84,14 @@ impl SwaggapiPageBuilder {
                     request_body.extend((arg.request_body)(&mut *gen));
                 }
             }
-            let responses = (desc.responses)(&mut *gen);
+            let responses = (handler.responses)(&mut *gen);
             (parameters, request_body, responses)
         });
 
-        let summary = desc.doc.get(0).map(|line| line.trim().to_string());
+        let summary = handler.doc.get(0).map(|line| line.trim().to_string());
         let description = summary.clone().map(|summary| {
-            desc.doc
+            handler
+                .doc
                 .get(1..)
                 .unwrap_or(&[])
                 .iter()
@@ -104,11 +101,11 @@ impl SwaggapiPageBuilder {
         let operation = Operation {
             summary,
             description,
-            operation_id: Some(desc.ident.to_string()),
+            operation_id: Some(handler.ident.to_string()),
             parameters,
             request_body: request_body.pop().map(ReferenceOr::Item),
             responses,
-            deprecated: desc.deprecated,
+            deprecated: handler.deprecated,
             security: None,   // TODO
             tags: Vec::new(), // TODO
             // Not supported:
@@ -121,12 +118,12 @@ impl SwaggapiPageBuilder {
         let ReferenceOr::Item(path) = state
             .paths
             .paths
-            .entry(format!("{}/{}", desc.ctx_path, desc.path))
+            .entry(format!("{}/{}", handler.ctx_path, handler.path))
             .or_insert_with(|| ReferenceOr::Item(PathItem::default()))
         else {
             unreachable!("We only ever insert ReferenceOr::Item. See above")
         };
-        let operation_mut = match desc.method {
+        let operation_mut = match handler.method {
             Method::Get => &mut path.get,
             Method::Post => &mut path.post,
             Method::Put => &mut path.put,

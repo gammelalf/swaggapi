@@ -41,7 +41,7 @@ pub async fn openapi() -> Json<Arc<OpenAPI>> {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let app = Router::new()
-        .routes(&[&index, &json])
+        .routes([index, json])
         .route("/openapi", axum::routing::get(openapi));
 
     let listener = TcpListener::bind("127.0.0.1:8080").await?;

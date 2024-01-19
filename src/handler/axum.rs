@@ -3,15 +3,16 @@ use std::collections::BTreeMap;
 
 use axum::Router;
 
-use crate::handler::Handler;
+use crate::Handler;
+
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_Foo_axum {
-    ($ident:path: fn($($arg:ty),*) -> $ret:ty) => {
-        fn axum(&self) -> $crate::re_exports::axum::routing::MethodRouter {
-            <$crate::PageOfEverything as $crate::SwaggapiPage>::builder().add_handler(self);
+    ($module:ident::$ident:ident: fn($($arg:ty),*) -> $ret:ty) => {
+        || {
+            <$crate::PageOfEverything as $crate::SwaggapiPage>::builder().add_handler(&$ident);
             $crate::re_exports::axum::routing::MethodRouter::new()
-                .on(self.description().method.axum(), $ident)
+                .on($ident.method.axum(), $module::$ident)
         }
     };
 }
@@ -19,20 +20,19 @@ macro_rules! impl_Foo_axum {
 /// Extension trait to give [`Router`] swaggapi support
 pub trait RouterExt {
     /// Add a set of swaggapi [`Handler`]s to the router
-    fn routes(self, handlers: &[&dyn Handler]) -> Self;
+    fn routes<const N: usize>(self, handlers: [Handler; N]) -> Self;
 }
 impl RouterExt for Router {
-    fn routes(self, handlers: &[&dyn Handler]) -> Self {
+    fn routes<const N: usize>(self, handlers: [Handler; N]) -> Self {
         let mut routes = BTreeMap::new();
         for handler in handlers {
-            let desc = handler.description();
-            match routes.entry(desc.path) {
+            match routes.entry(handler.path) {
                 Entry::Vacant(entry) => {
-                    entry.insert(handler.axum());
+                    entry.insert((handler.axum)());
                 }
                 Entry::Occupied(entry) => {
                     let (path, method_router) = entry.remove_entry();
-                    routes.insert(path, method_router.merge(handler.axum()));
+                    routes.insert(path, method_router.merge((handler.axum)()));
                 }
             }
         }

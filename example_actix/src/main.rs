@@ -1,10 +1,10 @@
 use std::error::Error;
+use std::sync::Arc;
 
 use actix_web::web::{Form, Json};
 use actix_web::{App, HttpServer};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use swaggapi::handler::Handler;
 use swaggapi::re_exports::openapiv3::OpenAPI;
 use swaggapi::{PageOfEverything, SwaggapiPage};
 
@@ -34,7 +34,7 @@ pub async fn json(_json: Json<JsonBody>) -> Json<JsonResponse> {
 }
 
 #[actix_web::get("/openapi")]
-pub async fn openapi() -> Json<OpenAPI> {
+pub async fn openapi() -> Json<Arc<OpenAPI>> {
     Json(PageOfEverything::builder().build())
 }
 

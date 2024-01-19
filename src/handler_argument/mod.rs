@@ -35,7 +35,7 @@ pub trait HandlerArgument: ShouldBeHandlerArgument {
 }
 
 /// Struct representation of a [`HandlerArgument`]
-#[derive(Eq, PartialEq, Copy, Clone)]
+#[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub struct HandlerArgumentFns {
     pub(crate) request_body: fn(&mut SchemaGenerator) -> Option<RequestBody>,
     pub(crate) parameters: fn(&mut SchemaGenerator) -> Vec<Parameter>,
@@ -74,7 +74,20 @@ pub mod macro_helper {
 
     /// Feed the result of `probe.get_handler_argument` to this function to check
     /// if [`HandlerArgument`] is implemented for a [`ShouldBeHandlerArgument`] type
-    pub fn check_handler_argument<T: HandlerArgument>(_: Option<T>) {}
+    pub const fn check_handler_argument<T: HandlerArgument>(_: fn() -> PhantomData<T>) {}
+    pub const fn get_handler_argument_fns<T: HandlerArgument, IsHandler: Boolean>(
+        _: fn() -> PhantomData<T>,
+        _: fn() -> IsHandler,
+    ) -> Option<HandlerArgumentFns> {
+        if IsHandler::VALUE {
+            Some(HandlerArgumentFns {
+                request_body: T::request_body,
+                parameters: T::parameters,
+            })
+        } else {
+            None
+        }
+    }
 
     impl<T> TraitProbe<T>
     where
@@ -84,8 +97,8 @@ pub mod macro_helper {
             true
         }
 
-        pub fn get_handler_argument(&self) -> Option<T> {
-            None
+        pub fn get_handler_argument(&self) -> PhantomData<T> {
+            PhantomData
         }
     }
 
@@ -93,15 +106,8 @@ pub mod macro_helper {
     where
         T: HandlerArgument,
     {
-        pub fn is_handler_argument(&self) -> bool {
-            true
-        }
-
-        pub fn get_handler_argument_fns(&self) -> Option<HandlerArgumentFns> {
-            Some(HandlerArgumentFns {
-                request_body: T::request_body,
-                parameters: T::parameters,
-            })
+        pub fn is_handler_argument(&self) -> True {
+            True
         }
     }
 
@@ -110,16 +116,12 @@ pub mod macro_helper {
             false
         }
 
-        pub fn get_handler_argument(&self) -> Option<NotAnArgument> {
-            None
+        pub fn get_handler_argument(&self) -> PhantomData<NotAnArgument> {
+            PhantomData
         }
 
-        pub fn get_handler_argument_fns(&self) -> Option<HandlerArgumentFns> {
-            None
-        }
-
-        pub fn is_handler_argument(&self) -> bool {
-            false
+        pub fn is_handler_argument(&self) -> False {
+            False
         }
     }
 
@@ -147,4 +149,19 @@ pub mod macro_helper {
     impl ShouldBeHandlerArgument for NotAnArgument {}
 
     impl HandlerArgument for NotAnArgument {}
+
+    pub struct True;
+    pub struct False;
+    pub trait Boolean {
+        const VALUE: bool;
+        fn value(&self) -> bool {
+            Self::VALUE
+        }
+    }
+    impl Boolean for True {
+        const VALUE: bool = true;
+    }
+    impl Boolean for False {
+        const VALUE: bool = false;
+    }
 }
