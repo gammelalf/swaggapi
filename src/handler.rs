@@ -1,10 +1,3 @@
-#[cfg(feature = "actix")]
-mod actix;
-#[cfg(feature = "axum")]
-mod axum;
-
-#[cfg(feature = "axum")]
-pub use axum::RouterExt;
 use openapiv3::Responses;
 use schemars::gen::SchemaGenerator;
 
@@ -19,9 +12,6 @@ pub struct Handler {
 
     /// The handler's path
     pub path: &'static str,
-
-    /// A common path to prefix `path` with
-    pub ctx_path: &'static str,
 
     /// `true` if `#[deprecated]` is present
     pub deprecated: bool,
@@ -61,11 +51,37 @@ macro_rules! impl_Foo_actix {
         ()
     };
 }
+#[cfg(feature = "actix")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_Foo_actix {
+    ($module:ident::$ident:ident: fn($($arg:ty),*) -> $ret:ty) => {
+        || {
+            <$crate::PageOfEverything as $crate::SwaggapiPage>::builder().add_handler(&$ident);
+            $crate::re_exports::actix_web::Route::new()
+                .method($ident.method.actix())
+                .to($module::$ident)
+        }
+    };
+}
+
 #[cfg(not(feature = "axum"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_Foo_axum {
     ($ident:path: fn($($arg:ty),*) -> $ret:ty) => {
         ()
+    };
+}
+#[cfg(feature = "axum")]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! impl_Foo_axum {
+    ($module:ident::$ident:ident: fn($($arg:ty),*) -> $ret:ty) => {
+        || {
+            <$crate::PageOfEverything as $crate::SwaggapiPage>::builder().add_handler(&$ident);
+            $crate::re_exports::axum::routing::MethodRouter::new()
+                .on($ident.method.axum(), $module::$ident)
+        }
     };
 }

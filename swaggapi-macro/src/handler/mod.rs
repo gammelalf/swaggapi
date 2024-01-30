@@ -1,5 +1,4 @@
-use proc_macro2::{Ident, Literal, TokenStream};
-use proc_macro2::{Span, TokenTree};
+use proc_macro2::{Ident, Literal, Span, TokenStream, TokenTree};
 use quote::{format_ident, quote, ToTokens};
 use syn::{FnArg, ItemFn, Meta, MetaNameValue, ReturnType};
 
@@ -35,10 +34,6 @@ pub fn handler(
     let method = method
         .map(|str| TokenTree::Ident(Ident::new(str, Span::call_site())))
         .or_else(|| keyword.remove(&Ident::new("method", Span::call_site())))
-        .or_else(|| positional.next())
-        .unwrap();
-    let ctx_path = keyword
-        .remove(&Ident::new("context_path", Span::call_site()))
         .or_else(|| positional.next())
         .unwrap();
     let path = keyword
@@ -111,7 +106,6 @@ pub fn handler(
             ::swaggapi::handler::Handler {
                 method: ::swaggapi::Method::#method,
                 path: #path,
-                ctx_path: #ctx_path,
                 deprecated: #deprecated,
                 doc: &[#(
                     #doc,

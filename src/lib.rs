@@ -2,6 +2,7 @@
 #![warn(clippy::todo)]
 
 pub mod as_responses;
+mod context;
 mod convert;
 pub mod handler;
 pub mod handler_argument;
@@ -11,11 +12,12 @@ use std::collections::BTreeMap;
 use std::mem;
 use std::sync::{Arc, Mutex};
 
-pub use convert::convert_schema;
-pub use handler::Handler;
 use indexmap::IndexMap;
 pub use swaggapi_macro::*;
 
+pub use self::context::ApiContext;
+pub use self::convert::convert_schema;
+pub use self::handler::Handler;
 pub use self::method::Method;
 
 /// Reexports for macros and implementors
@@ -118,7 +120,7 @@ impl SwaggapiPageBuilder {
         let ReferenceOr::Item(path) = state
             .paths
             .paths
-            .entry(format!("{}/{}", handler.ctx_path, handler.path))
+            .entry(handler.path.to_string())
             .or_insert_with(|| ReferenceOr::Item(PathItem::default()))
         else {
             unreachable!("We only ever insert ReferenceOr::Item. See above")
