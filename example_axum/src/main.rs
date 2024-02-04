@@ -44,10 +44,22 @@ pub async fn openapi() -> Json<Arc<OpenAPI>> {
     Json(PageOfEverything::builder().build())
 }
 
+#[derive(SwaggapiPage)]
+pub struct ApiV1;
+
+#[derive(SwaggapiPage)]
+pub struct ApiV2;
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let app = Router::new()
-        .merge(ApiContext::new("/api").handler(json).handler(index))
+        .merge(ApiContext::new("/api/v1").page(ApiV1).handler(index))
+        .merge(
+            ApiContext::new("/api/v2")
+                .page(ApiV1)
+                .handler(json)
+                .handler(index),
+        )
         .route("/openapi", axum::routing::get(openapi));
 
     let listener = TcpListener::bind("127.0.0.1:8080").await?;

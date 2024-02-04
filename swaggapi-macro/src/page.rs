@@ -24,9 +24,9 @@ pub fn page(input: TokenStream) -> TokenStream {
     }
 
     quote! {
-        impl SwaggapiPage for #ident {
-            fn builder() -> &'static SwaggapiPageBuilder {
-                static BUILDER: SwaggapiPageBuilder = SwaggapiPageBuilder::new();
+        impl ::swaggapi::SwaggapiPage for #ident {
+            fn builder() -> &'static ::swaggapi::SwaggapiPageBuilder {
+                static BUILDER: ::swaggapi::SwaggapiPageBuilder = ::swaggapi::SwaggapiPageBuilder::new();
                 &BUILDER
             }
         }

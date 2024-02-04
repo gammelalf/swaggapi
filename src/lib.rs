@@ -4,7 +4,7 @@
 pub mod as_responses;
 mod context;
 mod convert;
-pub mod handler;
+mod handler;
 pub mod handler_argument;
 mod method;
 
@@ -33,8 +33,13 @@ use openapiv3::{Components, Info, OpenAPI, Operation, PathItem, Paths, Reference
 use schemars::gen::{SchemaGenerator, SchemaSettings};
 use schemars::schema::Schema;
 
-#[derive(SwaggapiPage)]
 pub struct PageOfEverything;
+impl SwaggapiPage for PageOfEverything {
+    fn builder() -> &'static SwaggapiPageBuilder {
+        static BUILDER: SwaggapiPageBuilder = SwaggapiPageBuilder::new();
+        &BUILDER
+    }
+}
 
 pub trait SwaggapiPage {
     fn builder() -> &'static SwaggapiPageBuilder;
@@ -68,7 +73,11 @@ impl SwaggapiPageBuilder {
         }
     }
 
-    pub fn add_handler(&self, handler: &Handler) {
+    /// Add a handler to this api page
+    ///
+    /// The handler will be registered under a custom `handler_path` instead of using the `handler.path`.
+    /// This allows an [`ApiContext`] to modify
+    pub fn add_handler(&self, handler_path: String, handler: Handler) {
         let mut guard = self.state.lock().unwrap();
         let state = guard.get_or_insert_with(Default::default);
         state.last_build = None;
@@ -120,7 +129,7 @@ impl SwaggapiPageBuilder {
         let ReferenceOr::Item(path) = state
             .paths
             .paths
-            .entry(handler.path.to_string())
+            .entry(handler_path)
             .or_insert_with(|| ReferenceOr::Item(PathItem::default()))
         else {
             unreachable!("We only ever insert ReferenceOr::Item. See above")

@@ -43,6 +43,12 @@ pub async fn openapi() -> Json<Arc<OpenAPI>> {
     Json(PageOfEverything::builder().build())
 }
 
+#[derive(SwaggapiPage)]
+pub struct ApiV1;
+
+#[derive(SwaggapiPage)]
+pub struct ApiV2;
+
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
@@ -50,9 +56,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
     HttpServer::new(|| {
         App::new()
             .service(
-                ApiContext::new("/api")
-                    .handler(json)
+                ApiContext::new("/api/v1")
+                    .page(ApiV1)
                     .handler(submit)
+                    .handler(index),
+            )
+            .service(
+                ApiContext::new("/api/v2")
+                    .page(ApiV2)
+                    .handler(json)
                     .handler(index),
             )
             .service(openapi)

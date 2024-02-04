@@ -57,7 +57,6 @@ macro_rules! impl_Foo_actix {
 macro_rules! impl_Foo_actix {
     ($module:ident::$ident:ident: fn($($arg:ty),*) -> $ret:ty) => {
         || {
-            <$crate::PageOfEverything as $crate::SwaggapiPage>::builder().add_handler(&$ident);
             $crate::re_exports::actix_web::Route::new()
                 .method($ident.method.actix())
                 .to($module::$ident)
@@ -79,7 +78,6 @@ macro_rules! impl_Foo_axum {
 macro_rules! impl_Foo_axum {
     ($module:ident::$ident:ident: fn($($arg:ty),*) -> $ret:ty) => {
         || {
-            <$crate::PageOfEverything as $crate::SwaggapiPage>::builder().add_handler(&$ident);
             $crate::re_exports::axum::routing::MethodRouter::new()
                 .on($ident.method.axum(), $module::$ident)
         }
