@@ -7,6 +7,8 @@ mod convert;
 mod handler;
 pub mod handler_argument;
 mod method;
+#[cfg(feature = "swagger-ui")]
+mod swagger;
 
 use std::collections::BTreeMap;
 use std::mem;
@@ -19,6 +21,8 @@ pub use self::context::ApiContext;
 pub use self::convert::convert_schema;
 pub use self::handler::Handler;
 pub use self::method::Method;
+#[cfg(feature = "swagger-ui")]
+pub use self::swagger::SwaggerUi;
 
 /// Reexports for macros and implementors
 pub mod re_exports {
@@ -26,6 +30,8 @@ pub mod re_exports {
     pub use actix_web;
     #[cfg(feature = "axum")]
     pub use axum;
+    #[cfg(feature = "swagger-ui")]
+    pub use swagger_ui;
     pub use {indexmap, openapiv3, schemars};
 }
 
@@ -33,6 +39,7 @@ use openapiv3::{Components, Info, OpenAPI, Operation, PathItem, Paths, Reference
 use schemars::gen::{SchemaGenerator, SchemaSettings};
 use schemars::schema::Schema;
 
+/// An implicit [`SwaggapiPage`] which will always contain your entire api
 pub struct PageOfEverything;
 impl SwaggapiPage for PageOfEverything {
     fn builder() -> &'static SwaggapiPageBuilder {
@@ -65,6 +72,9 @@ struct SwaggapiPageBuilderState {
 }
 
 impl SwaggapiPageBuilder {
+    /// Construct a new empty builder
+    ///
+    /// Builders will be stored in `static` variables, so this function has to be `const`.
     pub const fn new() -> Self {
         Self {
             title: "",
@@ -156,7 +166,7 @@ impl SwaggapiPageBuilder {
         }
 
         let open_api = Arc::new(OpenAPI {
-            openapi: "3.0".to_string(),
+            openapi: "3.0.0".to_string(),
             info: Info {
                 title: self.title.to_string(),
                 description: None,

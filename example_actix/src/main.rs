@@ -1,12 +1,11 @@
 use std::error::Error;
-use std::sync::Arc;
 
 use actix_web::web::{Form, Json};
 use actix_web::{App, HttpServer};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use swaggapi::re_exports::openapiv3::OpenAPI;
-use swaggapi::{ApiContext, PageOfEverything, SwaggapiPage};
+use swaggapi::SwaggerUi;
+use swaggapi::{ApiContext, SwaggapiPage};
 
 #[swaggapi::get("/index")]
 pub async fn index() -> &'static str {
@@ -38,11 +37,6 @@ pub async fn json(json: Json<JsonBody>) -> Json<JsonResponse> {
     json
 }
 
-#[actix_web::get("/openapi")]
-pub async fn openapi() -> Json<Arc<OpenAPI>> {
-    Json(PageOfEverything::builder().build())
-}
-
 #[derive(SwaggapiPage)]
 pub struct ApiV1;
 
@@ -53,7 +47,7 @@ pub struct ApiV2;
 async fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
 
-    HttpServer::new(|| {
+    HttpServer::new(move || {
         App::new()
             .service(
                 ApiContext::new("/api/v1")
@@ -67,7 +61,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     .handler(json)
                     .handler(index),
             )
-            .service(openapi)
+            .service(
+                SwaggerUi::default()
+                    .page("API v1", "openapi_v1.json", ApiV1)
+                    .page("API v2", "openapi_v2.json", ApiV2),
+            )
     })
     .bind(("127.0.0.1", 8080))?
     .run()

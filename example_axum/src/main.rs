@@ -1,11 +1,10 @@
 use std::error::Error;
-use std::sync::Arc;
 
-use axum::{Form, Json, Router};
+use axum::{Json, Router};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use swaggapi::re_exports::openapiv3::OpenAPI;
-use swaggapi::{ApiContext, PageOfEverything, SwaggapiPage};
+use swaggapi::SwaggerUi;
+use swaggapi::{ApiContext, SwaggapiPage};
 use tokio::net::TcpListener;
 
 #[swaggapi::get("/index")]
@@ -36,12 +35,8 @@ pub type JsonResponse = JsonBody;
 ///
 /// wow some explanation
 #[swaggapi::post("/json")]
-pub async fn json(_json: Json<JsonBody>) -> Json<JsonResponse> {
-    todo!()
-}
-
-pub async fn openapi() -> Json<Arc<OpenAPI>> {
-    Json(PageOfEverything::builder().build())
+pub async fn json(json: Json<JsonBody>) -> Json<JsonResponse> {
+    json
 }
 
 #[derive(SwaggapiPage)]
@@ -56,11 +51,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .merge(ApiContext::new("/api/v1").page(ApiV1).handler(index))
         .merge(
             ApiContext::new("/api/v2")
-                .page(ApiV1)
+                .page(ApiV2)
                 .handler(json)
                 .handler(index),
         )
-        .route("/openapi", axum::routing::get(openapi));
+        .merge(
+            SwaggerUi::default()
+                .page("API v1", "openapi_v1.json", ApiV1)
+                .page("API v2", "openapi_v2.json", ApiV2),
+        );
 
     let listener = TcpListener::bind("127.0.0.1:8080").await?;
     axum::serve(listener, app).await?;
