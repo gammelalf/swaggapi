@@ -1,8 +1,8 @@
 use std::error::Error;
 use std::sync::Arc;
 
-use actix_web::web::{Form, Json};
-use actix_web::{App, HttpServer};
+use actix_web::web::{Data, Form, Json, Path};
+use actix_web::{App, HttpResponse, HttpServer};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use swaggapi::re_exports::openapiv3::OpenAPI;
@@ -53,8 +53,11 @@ pub struct ApiV2;
 async fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
 
-    HttpServer::new(|| {
+    let config = Data::new(utoipa_swagger_ui::Config::<'static>::new(["/openapi"]));
+
+    HttpServer::new(move || {
         App::new()
+            .app_data(config.clone())
             .service(
                 ApiContext::new("/api/v1")
                     .page(ApiV1)
@@ -68,10 +71,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     .handler(index),
             )
             .service(openapi)
+            .service(get_swagger_ui)
     })
     .bind(("127.0.0.1", 8080))?
     .run()
     .await?;
 
     Ok(())
+}
+
+#[actix_web::get("/swagger-ui/{_:.*}")]
+async fn get_swagger_ui(path: Path<String>) -> HttpResponse {
+    match swaggapi::swagger::file(&path.into_inner()) {
+        Some(file) => HttpResponse::Ok().body(file.to_vec()),
+        None => HttpResponse::NotFound().finish(),
+    }
 }

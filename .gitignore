@@ -1,6 +1,6 @@
 target/
 .idea/
-swagger-ui/
+swagger-dist/
 
 openapi.json
 Cargo.lock

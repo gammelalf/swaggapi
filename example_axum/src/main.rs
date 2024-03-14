@@ -1,6 +1,12 @@
+use std::borrow::Cow;
 use std::error::Error;
 use std::sync::Arc;
 
+use axum::body::Body;
+use axum::extract::Path;
+use axum::http::header::CONTENT_TYPE;
+use axum::http::StatusCode;
+use axum::response::{AppendHeaders, IntoResponse, Response};
 use axum::{Form, Json, Router};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -60,10 +66,29 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 .handler(json)
                 .handler(index),
         )
-        .route("/openapi", axum::routing::get(openapi));
+        .route("/openapi", axum::routing::get(openapi))
+        .route("/swagger-ui/*_", axum::routing::get(get_swagger_ui));
 
     let listener = TcpListener::bind("127.0.0.1:8080").await?;
     axum::serve(listener, app).await?;
 
     Ok(())
+}
+
+async fn get_swagger_ui(Path(path): Path<String>) -> Response {
+    let file = swaggapi::swagger::file(&path);
+    Response::builder()
+        .status(if file.is_some() {
+            StatusCode::OK
+        } else {
+            StatusCode::NOT_FOUND
+        })
+        .header(
+            CONTENT_TYPE,
+            mime_guess::from_path(&path)
+                .first_or_octet_stream()
+                .to_string(),
+        )
+        .body(Body::from(file.unwrap_or_default()))
+        .unwrap()
 }

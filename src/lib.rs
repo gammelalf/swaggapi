@@ -7,6 +7,7 @@ mod convert;
 mod handler;
 pub mod handler_argument;
 mod method;
+pub mod swagger;
 
 use std::collections::BTreeMap;
 use std::mem;
@@ -156,7 +157,7 @@ impl SwaggapiPageBuilder {
         }
 
         let open_api = Arc::new(OpenAPI {
-            openapi: "3.0".to_string(),
+            openapi: "3.0.0".to_string(),
             info: Info {
                 title: self.title.to_string(),
                 description: None,
