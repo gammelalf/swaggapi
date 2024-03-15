@@ -3,6 +3,7 @@ use std::error::Error;
 use axum::{Json, Router};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use swaggapi::utils::SchemalessJson;
 use swaggapi::SwaggerUi;
 use swaggapi::{ApiContext, SwaggapiPage};
 use tokio::net::TcpListener;
@@ -39,6 +40,11 @@ pub async fn json(json: Json<JsonBody>) -> Json<JsonResponse> {
     json
 }
 
+#[swaggapi::post("/json")]
+pub async fn schemaless_json(json2: SchemalessJson<()>) -> SchemalessJson<()> {
+    json2
+}
+
 #[derive(SwaggapiPage)]
 pub struct ApiV1;
 
@@ -48,7 +54,12 @@ pub struct ApiV2;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let app = Router::new()
-        .merge(ApiContext::new("/api/v1").page(ApiV1).handler(index))
+        .merge(
+            ApiContext::new("/api/v1")
+                .page(ApiV1)
+                .handler(index)
+                .handler(schemaless_json),
+        )
         .merge(
             ApiContext::new("/api/v2")
                 .page(ApiV2)

@@ -4,6 +4,7 @@
 mod actix;
 #[cfg(feature = "axum")]
 mod axum;
+mod utils;
 
 use indexmap::IndexMap;
 use mime::Mime;

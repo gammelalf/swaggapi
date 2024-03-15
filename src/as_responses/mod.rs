@@ -3,11 +3,15 @@
 use mime::Mime;
 use openapiv3::{MediaType, ReferenceOr, Response, Responses, StatusCode};
 use schemars::gen::SchemaGenerator;
+use schemars::JsonSchema;
+
+use crate::internals::convert_schema;
 
 #[cfg(feature = "actix")]
 mod actix;
 #[cfg(feature = "axum")]
 mod axum;
+mod utils;
 
 /// A type returned by a handler which can be described with a [responses object](https://spec.openapis.org/oas/v3.0.3#responses-object)
 ///
@@ -56,4 +60,40 @@ pub struct SimpleResponse {
 
     /// Optional more details explanation of the response's data
     pub media_type: Option<MediaType>,
+}
+
+/// Helper function for building a [`Responses`] for a simple `200` plain text response
+pub fn ok_text() -> Responses {
+    simple_responses([SimpleResponse {
+        status_code: StatusCode::Code(200),
+        mime_type: mime::TEXT_PLAIN_UTF_8,
+        description: "Some plain text".to_string(),
+        media_type: None,
+    }])
+}
+
+/// Helper function for building a [`Responses`] for a simple `200` binary response
+pub fn ok_binary() -> Responses {
+    simple_responses([SimpleResponse {
+        status_code: StatusCode::Code(200),
+        mime_type: mime::APPLICATION_OCTET_STREAM,
+        description: "Some binary data".to_string(),
+        media_type: None,
+    }])
+}
+
+/// Helper function for building a [`Responses`] for a simple `200` json response using a schema
+pub fn ok_json<T: JsonSchema>(gen: &mut SchemaGenerator) -> Responses {
+    simple_responses([
+        SimpleResponse {
+            status_code: StatusCode::Code(200),
+            mime_type: mime::APPLICATION_JSON,
+            description: "".to_string(), // TODO take the schema's
+            media_type: Some(MediaType {
+                schema: Some(convert_schema(gen.subschema_for::<T>())),
+                ..Default::default()
+            }),
+        },
+        // TODO add error
+    ])
 }

@@ -8,6 +8,7 @@ pub mod internals;
 mod page;
 #[cfg(feature = "swagger-ui")]
 mod swagger;
+pub mod utils;
 
 pub use swaggapi_macro::*;
 
@@ -24,5 +25,5 @@ pub mod re_exports {
     pub use axum;
     #[cfg(feature = "swagger-ui")]
     pub use swagger_ui;
-    pub use {indexmap, openapiv3, schemars};
+    pub use {indexmap, mime, openapiv3, schemars};
 }

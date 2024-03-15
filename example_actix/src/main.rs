@@ -4,6 +4,7 @@ use actix_web::web::{Form, Json};
 use actix_web::{App, HttpServer};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use swaggapi::utils::SchemalessJson;
 use swaggapi::SwaggerUi;
 use swaggapi::{ApiContext, SwaggapiPage};
 
@@ -37,6 +38,11 @@ pub async fn json(json: Json<JsonBody>) -> Json<JsonResponse> {
     json
 }
 
+#[swaggapi::post("/json")]
+pub async fn schemaless_json(json2: SchemalessJson<()>) -> SchemalessJson<()> {
+    json2
+}
+
 #[derive(SwaggapiPage)]
 pub struct ApiV1;
 
@@ -53,7 +59,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 ApiContext::new("/api/v1")
                     .page(ApiV1)
                     .handler(submit)
-                    .handler(index),
+                    .handler(index)
+                    .handler(schemaless_json),
             )
             .service(
                 ApiContext::new("/api/v2")

@@ -5,12 +5,21 @@ use swagger_ui::UrlObject;
 use crate::internals::{AccessSwaggapiPageBuilder, SwaggapiPageBuilder};
 use crate::{PageOfEverything, SwaggapiPage};
 
+/// Set of endpoints serving a Swagger UI and the actual openapi files
 pub struct SwaggerUi {
-    path: &'static str,
-    config: swagger_ui::Config,
+    /// The path under which to serve the ui
+    pub path: &'static str,
+
+    /// The config to use
+    ///
+    /// **Note:** the `urls` field will be extended
+    /// by the [`SwaggapiPage`]s you added through [`SwaggerUi::page`].
+    pub config: swagger_ui::Config,
+
     pages: Vec<(&'static str, &'static str, &'static SwaggapiPageBuilder)>,
 }
 impl Default for SwaggerUi {
+    /// Normally the swagger ui is served under `"/swagger-ui"` and contains the [`PageOfEverything`]
     fn default() -> Self {
         Self {
             path: "/swagger-ui",
@@ -20,6 +29,15 @@ impl Default for SwaggerUi {
     }
 }
 impl SwaggerUi {
+    /// Returns [`SwaggerUi::default`] but without including the [`PageOfEverything`]
+    pub fn without_everything() -> Self {
+        Self {
+            path: "/swagger-ui",
+            config: swagger_ui::Config::default(),
+            pages: vec![],
+        }
+    }
+
     /// Adds a [`SwaggapiPage`] to the ui
     pub fn page(
         mut self,
