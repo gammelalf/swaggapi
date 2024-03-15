@@ -95,7 +95,7 @@ pub fn handler(
                 ::swaggapi::handler_argument::macro_helper::get_handler_argument_fns(
                     || ::swaggapi::handler_argument::macro_helper::TraitProbe::<#argument_type>::new().get_handler_argument(),
                     || ::swaggapi::handler_argument::macro_helper::TraitProbe::<#argument_type>::new().is_handler_argument(),
-                )
+                ),
             )*];
             const _: () = {#(
                 ::swaggapi::handler_argument::macro_helper::check_handler_argument(
