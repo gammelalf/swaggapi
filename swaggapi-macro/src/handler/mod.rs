@@ -89,7 +89,7 @@ pub fn handler(
             #tokens
         }
         #[allow(non_upper_case_globals)]
-        #vis static #func_ident: ::swaggapi::Handler =  {
+        #vis static #func_ident: ::swaggapi::internals::SwaggapiHandler =  {
             const N: usize =  0 #(+ {let _ = stringify!(#argument_type); 1})*;
             static FNS: [::std::option::Option<::swaggapi::handler_argument::HandlerArgumentFns>; N] = [#(
                 ::swaggapi::handler_argument::macro_helper::get_handler_argument_fns(
@@ -103,8 +103,8 @@ pub fn handler(
                 );
             )*};
 
-            ::swaggapi::Handler {
-                method: ::swaggapi::Method::#method,
+            ::swaggapi::internals::SwaggapiHandler {
+                method: ::swaggapi::internals::HttpMethod::#method,
                 path: #path,
                 deprecated: #deprecated,
                 doc: &[#(

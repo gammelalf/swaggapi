@@ -1,11 +1,12 @@
-use crate::as_responses::{simple_responses, AsResponses, SimpleResponse};
-use crate::convert_schema;
 use actix_web::{web, HttpResponse};
 use indexmap::IndexMap;
 use openapiv3::{MediaType, ReferenceOr, Response, Responses, StatusCode};
 use schemars::gen::SchemaGenerator;
 use schemars::JsonSchema;
 use serde::Serialize;
+
+use crate::as_responses::{simple_responses, AsResponses, SimpleResponse};
+use crate::internals::convert_schema;
 
 impl AsResponses for &'static str {
     fn responses(_gen: &mut SchemaGenerator) -> Responses {

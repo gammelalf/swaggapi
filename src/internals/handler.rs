@@ -2,13 +2,13 @@ use openapiv3::Responses;
 use schemars::gen::SchemaGenerator;
 
 use crate::handler_argument::HandlerArgumentFns;
-use crate::Method;
+use crate::internals::HttpMethod;
 
-/// Meta information about a handler gathered by the [`#[operation]`](operation) macro
+/// Meta information about a handler gathered by the [`#[operation]`](crate::operation) macro
 #[derive(Copy, Clone, Debug)]
-pub struct Handler {
+pub struct SwaggapiHandler {
     /// The http method the handler handles
-    pub method: Method,
+    pub method: HttpMethod,
 
     /// The handler's path
     pub path: &'static str,

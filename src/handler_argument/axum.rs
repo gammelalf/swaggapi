@@ -10,10 +10,10 @@ use schemars::schema::{InstanceType, ObjectValidation, SingleOrVec};
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 
-use crate::convert_schema;
 use crate::handler_argument::{
     simple_request_body, HandlerArgument, ShouldBeHandlerArgument, SimpleRequestBody,
 };
+use crate::internals::convert_schema;
 
 impl ShouldBeHandlerArgument for String {}
 impl HandlerArgument for String {

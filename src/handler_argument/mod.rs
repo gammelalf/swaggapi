@@ -1,3 +1,5 @@
+//! The [`HandlerArgument`] trait, its implementations and utilises for implementing it.
+
 #[cfg(feature = "actix")]
 mod actix;
 #[cfg(feature = "axum")]

@@ -4,7 +4,7 @@ use log::warn;
 use serde::de::value::StrDeserializer;
 use serde::de::DeserializeOwned;
 
-/// Convert a [schemars]'s [`Schema`](schemars::schema::Schema) to a [openapiv3]'s [`Schema`](openapiv3::Schema)
+/// Convert a [schemars](::schemars)'s [`Schema`](::schemars::schema::Schema) to a [openapiv3]'s [`Schema`](openapiv3::Schema)
 pub fn convert_schema(schema: schemars::Schema) -> openapi::ReferenceOr<openapi::Schema> {
     match schema {
         schemars::Schema::Object(object) => convert_schema_object(object),

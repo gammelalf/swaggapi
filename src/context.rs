@@ -1,11 +1,13 @@
-use crate::{Handler, PageOfEverything, SwaggapiPage, SwaggapiPageBuilder};
+use crate::internals::AccessSwaggapiPageBuilder;
+use crate::internals::{SwaggapiHandler, SwaggapiPageBuilder};
+use crate::{PageOfEverything, SwaggapiPage};
 
-/// An `ApiContext` combines several [`Handler`] under a common path.
+/// An `ApiContext` combines several [`SwaggapiHandler`] under a common path.
 ///
 /// It is also responsible for adding them to [`SwaggapiPage`]s once mounted to your application.
 pub struct ApiContext<Impl> {
     path: String,
-    handlers: Vec<Handler>,
+    handlers: Vec<SwaggapiHandler>,
     pages: Vec<&'static SwaggapiPageBuilder>,
     framework_impl: Impl,
 }
@@ -23,7 +25,7 @@ impl<T> ApiContext<T> {
     /// Add a handler to the context
     ///
     /// The handler will be routed under the context's path i.e. `"{ctx_path}/{handler_path}"`.
-    pub fn handler(mut self, handler: Handler) -> Self {
+    pub fn handler(mut self, handler: SwaggapiHandler) -> Self {
         self.handlers.push(handler);
         self
     }

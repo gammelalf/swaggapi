@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use swagger_ui::UrlObject;
 
-use crate::{PageOfEverything, SwaggapiPage, SwaggapiPageBuilder};
+use crate::internals::{AccessSwaggapiPageBuilder, SwaggapiPageBuilder};
+use crate::{PageOfEverything, SwaggapiPage};
 
 pub struct SwaggerUi {
     path: &'static str,

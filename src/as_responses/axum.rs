@@ -9,7 +9,7 @@ use schemars::JsonSchema;
 use serde::Serialize;
 
 use crate::as_responses::{simple_responses, AsResponses, SimpleResponse};
-use crate::convert_schema;
+use crate::internals::convert_schema;
 
 impl AsResponses for &'static str {
     fn responses(_gen: &mut SchemaGenerator) -> Responses {
