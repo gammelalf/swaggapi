@@ -11,6 +11,7 @@ pub struct ApiContext<Impl> {
     path: String,
     handlers: Vec<SwaggapiHandler>,
     pages: Vec<&'static SwaggapiPageBuilder>,
+    tags: Vec<&'static str>,
     framework_impl: Impl,
 }
 
@@ -20,6 +21,7 @@ impl<T> ApiContext<T> {
             path,
             handlers: Vec::new(),
             pages: Vec::new(),
+            tags: Vec::new(),
             framework_impl,
         }
     }
@@ -38,13 +40,23 @@ impl<T> ApiContext<T> {
         self
     }
 
+    /// Add a tag to all of this context's handlers
+    pub fn tag(mut self, tag: &'static str) -> Self {
+        self.tags.push(tag);
+        self
+    }
+
     fn add_to_pages(&self) {
         for handler in self.handlers.iter().copied() {
             let pages = [PageOfEverything::builder()]
                 .into_iter()
                 .chain(self.pages.iter().copied());
             for page in pages {
-                page.add_handler(format!("{}{}", self.path, handler.path), handler);
+                page.add_handler(
+                    format!("{}{}", self.path, handler.path),
+                    handler,
+                    &self.tags,
+                );
             }
         }
     }

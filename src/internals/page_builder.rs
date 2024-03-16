@@ -97,7 +97,12 @@ impl SwaggapiPageBuilder {
     ///
     /// The handler will be registered under a custom `handler_path` instead of using the `handler.path`.
     /// This allows an [`ApiContext`] to modify the path.
-    pub fn add_handler(&self, handler_path: String, handler: SwaggapiHandler) {
+    pub fn add_handler(
+        &self,
+        handler_path: String,
+        handler: SwaggapiHandler,
+        tags: &[&'static str],
+    ) {
         let mut guard = self.state.lock().unwrap();
         let state = guard.get_or_insert_with(Default::default);
         state.last_build = None;
@@ -137,8 +142,8 @@ impl SwaggapiPageBuilder {
             request_body: request_body.pop().map(ReferenceOr::Item),
             responses,
             deprecated: handler.deprecated,
-            security: None,   // TODO
-            tags: Vec::new(), // TODO
+            security: None, // TODO
+            tags: tags.iter().copied().map(String::from).collect(),
             // Not supported:
             external_docs: Default::default(),
             servers: Default::default(),

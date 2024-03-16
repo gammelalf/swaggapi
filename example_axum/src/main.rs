@@ -59,12 +59,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let app = Router::new()
         .merge(
             ApiContext::new("/api/v1")
+                .tag("v1")
                 .page(ApiV1)
                 .handler(index)
                 .handler(schemaless_json),
         )
         .merge(
             ApiContext::new("/api/v2")
+                .tag("v2")
                 .page(ApiV2)
                 .handler(json)
                 .handler(index),

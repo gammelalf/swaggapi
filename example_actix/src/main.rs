@@ -61,6 +61,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         App::new()
             .service(
                 ApiContext::new("/api/v1")
+                    .tag("v1")
                     .page(ApiV1)
                     .handler(submit)
                     .handler(index)
@@ -68,6 +69,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             )
             .service(
                 ApiContext::new("/api/v2")
+                    .tag("v2")
                     .page(ApiV2)
                     .handler(json)
                     .handler(index),
