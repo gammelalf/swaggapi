@@ -39,6 +39,14 @@ impl SwaggerUi {
         }
     }
 
+    /// Returns [`SwaggerUi::default`] with a given path
+    pub fn with_path(path: &'static str) -> Self {
+        Self {
+            path,
+            ..Default::default()
+        }
+    }
+
     /// Adds a [`SwaggapiPage`] to the ui
     pub fn page(
         mut self,
