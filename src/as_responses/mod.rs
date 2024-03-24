@@ -1,7 +1,12 @@
 //! The [`AsResponses`] trait, its implementations and utilises for implementing it.
 
+use indexmap::IndexMap;
 use mime::Mime;
-use openapiv3::{MediaType, ReferenceOr, Response, Responses, StatusCode};
+use openapiv3::MediaType;
+use openapiv3::ReferenceOr;
+use openapiv3::Response;
+use openapiv3::Responses;
+use openapiv3::StatusCode;
 use schemars::gen::SchemaGenerator;
 use schemars::JsonSchema;
 
@@ -80,6 +85,20 @@ pub fn ok_binary() -> Responses {
         description: "Some binary data".to_string(),
         media_type: None,
     }])
+}
+
+/// Helper function for building a [`Responses`]  for a simple `200` empty response
+pub fn ok_empty() -> Responses {
+    Responses {
+        responses: IndexMap::from([(
+            StatusCode::Code(200),
+            ReferenceOr::Item(Response {
+                description: "Empty body".to_string(),
+                ..Default::default()
+            }),
+        )]),
+        ..Default::default()
+    }
 }
 
 /// Helper function for building a [`Responses`] for a simple `200` json response using a schema
