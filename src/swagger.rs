@@ -2,8 +2,10 @@ use std::sync::Arc;
 
 use swagger_ui::UrlObject;
 
-use crate::internals::{AccessSwaggapiPageBuilder, SwaggapiPageBuilder};
-use crate::{PageOfEverything, SwaggapiPage};
+use crate::internals::AccessSwaggapiPageBuilder;
+use crate::internals::SwaggapiPageBuilder;
+use crate::PageOfEverything;
+use crate::SwaggapiPage;
 
 /// Set of endpoints serving a Swagger UI and the actual openapi files
 pub struct SwaggerUi {
@@ -32,9 +34,8 @@ impl SwaggerUi {
     /// Returns [`SwaggerUi::default`] but without including the [`PageOfEverything`]
     pub fn without_everything() -> Self {
         Self {
-            path: "/swagger-ui",
-            config: swagger_ui::Config::default(),
             pages: vec![],
+            ..Default::default()
         }
     }
 
@@ -55,9 +56,15 @@ impl SwaggerUi {
 
 #[cfg(feature = "actix")]
 const _: () = {
-    use actix_web::dev::{AppService, HttpServiceFactory};
-    use actix_web::web::{scope, Json, Redirect};
-    use actix_web::{web, HttpResponse, Responder, Route};
+    use actix_web::dev::AppService;
+    use actix_web::dev::HttpServiceFactory;
+    use actix_web::web;
+    use actix_web::web::scope;
+    use actix_web::web::Json;
+    use actix_web::web::Redirect;
+    use actix_web::HttpResponse;
+    use actix_web::Responder;
+    use actix_web::Route;
 
     impl HttpServiceFactory for SwaggerUi {
         fn register(self, app: &mut AppService) {
@@ -100,9 +107,12 @@ const _: () = {
 #[cfg(feature = "axum")]
 const _: () = {
     use axum::body::Body;
-    use axum::response::{IntoResponse, Redirect, Response};
+    use axum::response::IntoResponse;
+    use axum::response::Redirect;
+    use axum::response::Response;
     use axum::routing::MethodRouter;
-    use axum::{Json, Router};
+    use axum::Json;
+    use axum::Router;
 
     impl<S> From<SwaggerUi> for Router<S>
     where
