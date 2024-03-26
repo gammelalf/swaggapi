@@ -42,7 +42,6 @@ pub fn handler(
         .unwrap();
 
     let func_ident = &sig.ident;
-    let module_ident = format_ident!("__{}_module", sig.ident);
     let argument_type = sig
         .inputs
         .iter()
@@ -84,12 +83,10 @@ pub fn handler(
         _ => None,
     });
     quote! {
-        mod #module_ident {
-            use super::*;
-            #tokens
-        }
         #[allow(non_upper_case_globals)]
         #vis static #func_ident: ::swaggapi::internals::SwaggapiHandler =  {
+            #tokens
+
             const N: usize =  0 #(+ {let _ = stringify!(#argument_type); 1})*;
             static FNS: [::std::option::Option<::swaggapi::handler_argument::HandlerArgumentFns>; N] = [#(
                 ::swaggapi::handler_argument::macro_helper::get_handler_argument_fns(
@@ -114,10 +111,10 @@ pub fn handler(
                 responses: <#return_type as ::swaggapi::as_responses::AsResponses>::responses,
                 handler_arguments: &FNS,
                 actix: ::swaggapi::impl_Foo_actix!(
-                    #module_ident::#func_ident: fn(#(#argument_type),*) -> #return_type
+                    ::swaggapi::internals::HttpMethod::#method, #func_ident
                 ),
                 axum: ::swaggapi::impl_Foo_axum!(
-                    #module_ident::#func_ident: fn(#(#argument_type),*) -> #return_type
+                    ::swaggapi::internals::HttpMethod::#method, #func_ident
                 ),
             }
 

@@ -47,7 +47,7 @@ pub struct SwaggapiHandler {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_Foo_actix {
-    ($ident:path: fn($($arg:ty),*) -> $ret:ty) => {
+    ($method:expr, $ident:ident) => {
         ()
     };
 }
@@ -55,11 +55,11 @@ macro_rules! impl_Foo_actix {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_Foo_actix {
-    ($module:ident::$ident:ident: fn($($arg:ty),*) -> $ret:ty) => {
+    ($method:expr, $ident:ident) => {
         || {
             $crate::re_exports::actix_web::Route::new()
-                .method($ident.method.actix())
-                .to($module::$ident)
+                .method($method.actix())
+                .to($ident)
         }
     };
 }
@@ -68,7 +68,7 @@ macro_rules! impl_Foo_actix {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_Foo_axum {
-    ($ident:path: fn($($arg:ty),*) -> $ret:ty) => {
+    ($method:expr, $ident:ident) => {
         ()
     };
 }
@@ -76,10 +76,7 @@ macro_rules! impl_Foo_axum {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_Foo_axum {
-    ($module:ident::$ident:ident: fn($($arg:ty),*) -> $ret:ty) => {
-        || {
-            $crate::re_exports::axum::routing::MethodRouter::new()
-                .on($ident.method.axum(), $module::$ident)
-        }
+    ($method:expr, $ident:ident) => {
+        || $crate::re_exports::axum::routing::MethodRouter::new().on($method.axum(), $ident)
     };
 }
