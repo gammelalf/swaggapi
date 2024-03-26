@@ -1,11 +1,14 @@
 use std::error::Error;
 
-use axum::{Json, Router};
+use axum::Json;
+use axum::Router;
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use swaggapi::utils::SchemalessJson;
+use swaggapi::ApiContext;
+use swaggapi::SwaggapiPage;
 use swaggapi::SwaggerUi;
-use swaggapi::{ApiContext, SwaggapiPage};
 use tokio::net::TcpListener;
 
 #[swaggapi::get("/index")]

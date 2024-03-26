@@ -1,13 +1,17 @@
 use std::borrow::Cow;
 
 use axum::Json;
-use bytes::{Bytes, BytesMut};
+use bytes::Bytes;
+use bytes::BytesMut;
 use openapiv3::Responses;
 use schemars::gen::SchemaGenerator;
 use schemars::JsonSchema;
 use serde::Serialize;
 
-use crate::as_responses::{ok_binary, ok_json, ok_text, AsResponses};
+use crate::as_responses::ok_binary;
+use crate::as_responses::ok_json;
+use crate::as_responses::ok_text;
+use crate::as_responses::AsResponses;
 
 impl AsResponses for &'static str {
     fn responses(_gen: &mut SchemaGenerator) -> Responses {

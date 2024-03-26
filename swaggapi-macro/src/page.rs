@@ -1,7 +1,10 @@
 use proc_macro2::TokenStream;
-use quote::{quote, quote_spanned};
+use quote::quote;
+use quote::quote_spanned;
+use syn::parse2;
 use syn::spanned::Spanned;
-use syn::{parse2, Fields, ItemStruct};
+use syn::Fields;
+use syn::ItemStruct;
 
 pub fn page(input: TokenStream) -> TokenStream {
     let ItemStruct {

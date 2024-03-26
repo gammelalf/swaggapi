@@ -1,18 +1,27 @@
 use std::any::type_name;
 
 use axum::body::Bytes;
-use axum::extract::{Path, Query, RawForm};
-use axum::{Form, Json};
+use axum::extract::Path;
+use axum::extract::Query;
+use axum::extract::RawForm;
+use axum::Form;
+use axum::Json;
 use log::warn;
-use openapiv3::{Parameter, ParameterData, ParameterSchemaOrContent, RequestBody};
+use openapiv3::Parameter;
+use openapiv3::ParameterData;
+use openapiv3::ParameterSchemaOrContent;
+use openapiv3::RequestBody;
 use schemars::gen::SchemaGenerator;
-use schemars::schema::{InstanceType, ObjectValidation, SingleOrVec};
+use schemars::schema::InstanceType;
+use schemars::schema::ObjectValidation;
+use schemars::schema::SingleOrVec;
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 
-use crate::handler_argument::{
-    simple_request_body, HandlerArgument, ShouldBeHandlerArgument, SimpleRequestBody,
-};
+use crate::handler_argument::simple_request_body;
+use crate::handler_argument::HandlerArgument;
+use crate::handler_argument::ShouldBeHandlerArgument;
+use crate::handler_argument::SimpleRequestBody;
 use crate::internals::convert_schema;
 
 impl ShouldBeHandlerArgument for String {}

@@ -1,6 +1,8 @@
 use crate::internals::AccessSwaggapiPageBuilder;
-use crate::internals::{SwaggapiHandler, SwaggapiPageBuilder};
-use crate::{PageOfEverything, SwaggapiPage};
+use crate::internals::SwaggapiHandler;
+use crate::internals::SwaggapiPageBuilder;
+use crate::PageOfEverything;
+use crate::SwaggapiPage;
 
 /// An `ApiContext` combines several [`SwaggapiHandler`] under a common path.
 ///
@@ -50,7 +52,10 @@ impl<T> ApiContext<T> {
 
 #[cfg(feature = "actix")]
 const _: () = {
-    use actix_web::dev::{AppService, HttpServiceFactory, ServiceFactory, ServiceRequest};
+    use actix_web::dev::AppService;
+    use actix_web::dev::HttpServiceFactory;
+    use actix_web::dev::ServiceFactory;
+    use actix_web::dev::ServiceRequest;
     use actix_web::Scope;
 
     impl ApiContext<Scope> {
@@ -89,7 +94,8 @@ const _: () = {
     use std::borrow::Cow;
     use std::collections::BTreeMap;
 
-    use axum::routing::{MethodRouter, Router};
+    use axum::routing::MethodRouter;
+    use axum::routing::Router;
 
     impl ApiContext<Router> {
         /// Create a new context

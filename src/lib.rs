@@ -13,7 +13,8 @@ pub mod utils;
 pub use swaggapi_macro::*;
 
 pub use self::context::ApiContext;
-pub use self::page::{PageOfEverything, SwaggapiPage};
+pub use self::page::PageOfEverything;
+pub use self::page::SwaggapiPage;
 #[cfg(feature = "swagger-ui")]
 pub use self::swagger::SwaggerUi;
 
@@ -23,7 +24,10 @@ pub mod re_exports {
     pub use actix_web;
     #[cfg(feature = "axum")]
     pub use axum;
+    pub use indexmap;
+    pub use mime;
+    pub use openapiv3;
+    pub use schemars;
     #[cfg(feature = "swagger-ui")]
     pub use swagger_ui;
-    pub use {indexmap, mime, openapiv3, schemars};
 }

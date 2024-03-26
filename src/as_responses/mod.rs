@@ -1,7 +1,11 @@
 //! The [`AsResponses`] trait, its implementations and utilises for implementing it.
 
 use mime::Mime;
-use openapiv3::{MediaType, ReferenceOr, Response, Responses, StatusCode};
+use openapiv3::MediaType;
+use openapiv3::ReferenceOr;
+use openapiv3::Response;
+use openapiv3::Responses;
+use openapiv3::StatusCode;
 use schemars::gen::SchemaGenerator;
 use schemars::JsonSchema;
 

@@ -8,7 +8,11 @@ mod utils;
 
 use indexmap::IndexMap;
 use mime::Mime;
-use openapiv3::{MediaType, Parameter, ReferenceOr, RequestBody, Schema};
+use openapiv3::MediaType;
+use openapiv3::Parameter;
+use openapiv3::ReferenceOr;
+use openapiv3::RequestBody;
+use openapiv3::Schema;
 use schemars::gen::SchemaGenerator;
 
 /// Marker trait
@@ -73,7 +77,9 @@ pub mod macro_helper {
     use std::marker::PhantomData;
     use std::ops::Deref;
 
-    use super::{HandlerArgument, HandlerArgumentFns, ShouldBeHandlerArgument};
+    use super::HandlerArgument;
+    use super::HandlerArgumentFns;
+    use super::ShouldBeHandlerArgument;
 
     /// Feed the result of `probe.get_handler_argument` to this function to check
     /// if [`HandlerArgument`] is implemented for a [`ShouldBeHandlerArgument`] type

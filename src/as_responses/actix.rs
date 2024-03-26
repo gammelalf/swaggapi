@@ -1,15 +1,25 @@
+use actix_web::web;
 use actix_web::web::Redirect;
-use actix_web::{web, HttpResponse};
+use actix_web::HttpResponse;
 use indexmap::IndexMap;
-use openapiv3::{
-    Header, ParameterSchemaOrContent, ReferenceOr, Response, Responses, Schema, SchemaKind,
-    StatusCode, StringType, Type,
-};
+use openapiv3::Header;
+use openapiv3::ParameterSchemaOrContent;
+use openapiv3::ReferenceOr;
+use openapiv3::Response;
+use openapiv3::Responses;
+use openapiv3::Schema;
+use openapiv3::SchemaKind;
+use openapiv3::StatusCode;
+use openapiv3::StringType;
+use openapiv3::Type;
 use schemars::gen::SchemaGenerator;
 use schemars::JsonSchema;
 use serde::Serialize;
 
-use crate::as_responses::{ok_binary, ok_json, ok_text, AsResponses};
+use crate::as_responses::ok_binary;
+use crate::as_responses::ok_json;
+use crate::as_responses::ok_text;
+use crate::as_responses::AsResponses;
 
 impl AsResponses for &'static str {
     fn responses(_: &mut SchemaGenerator) -> Responses {

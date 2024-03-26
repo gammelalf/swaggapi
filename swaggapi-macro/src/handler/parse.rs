@@ -1,8 +1,13 @@
 use std::collections::HashMap;
 
-use proc_macro2::{Ident, Literal, TokenStream, TokenTree};
-use quote::{quote, quote_spanned};
-use syn::{parse2, ItemFn};
+use proc_macro2::Ident;
+use proc_macro2::Literal;
+use proc_macro2::TokenStream;
+use proc_macro2::TokenTree;
+use quote::quote;
+use quote::quote_spanned;
+use syn::parse2;
+use syn::ItemFn;
 
 pub fn parse(args: TokenStream, item: TokenStream) -> Result<(Args, ItemFn), TokenStream> {
     match parse2(item) {

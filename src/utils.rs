@@ -14,7 +14,10 @@ const _: () = {
 
     use actix_web::dev::Payload;
     use actix_web::web::Json;
-    use actix_web::{FromRequest, HttpRequest, HttpResponse, Responder};
+    use actix_web::FromRequest;
+    use actix_web::HttpRequest;
+    use actix_web::HttpResponse;
+    use actix_web::Responder;
 
     impl<T: 'static> FromRequest for SchemalessJson<T>
     where
@@ -45,9 +48,12 @@ const _: () = {
 
 #[cfg(feature = "axum")]
 const _: () = {
-    use axum::extract::{FromRequest, Request};
-    use axum::response::{IntoResponse, Response};
-    use axum::{async_trait, Json};
+    use axum::async_trait;
+    use axum::extract::FromRequest;
+    use axum::extract::Request;
+    use axum::response::IntoResponse;
+    use axum::response::Response;
+    use axum::Json;
 
     #[async_trait]
     impl<T, S: Sync> FromRequest<S> for SchemalessJson<T>

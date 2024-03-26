@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use openapiv3::OpenAPI;
 
-use crate::internals::{AccessSwaggapiPageBuilder, SwaggapiPageBuilder};
+use crate::internals::AccessSwaggapiPageBuilder;
+use crate::internals::SwaggapiPageBuilder;
 
 /// A page is a collection of api endpoints
 ///

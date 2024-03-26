@@ -1,13 +1,23 @@
 use std::collections::BTreeMap;
 use std::mem;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use std::sync::Mutex;
 
 use indexmap::IndexMap;
-use openapiv3::{Components, Info, OpenAPI, Operation, PathItem, Paths, ReferenceOr};
-use schemars::gen::{SchemaGenerator, SchemaSettings};
+use openapiv3::Components;
+use openapiv3::Info;
+use openapiv3::OpenAPI;
+use openapiv3::Operation;
+use openapiv3::PathItem;
+use openapiv3::Paths;
+use openapiv3::ReferenceOr;
+use schemars::gen::SchemaGenerator;
+use schemars::gen::SchemaSettings;
 use schemars::schema::Schema;
 
-use crate::internals::{convert_schema, HttpMethod, SwaggapiHandler};
+use crate::internals::convert_schema;
+use crate::internals::HttpMethod;
+use crate::internals::SwaggapiHandler;
 
 /// This trait associates one static instance of a [`SwaggapiPageBuilder`] to its implementor.
 ///

@@ -1,12 +1,16 @@
 use std::error::Error;
 
-use actix_web::web::{Form, Json};
-use actix_web::{App, HttpServer};
+use actix_web::web::Form;
+use actix_web::web::Json;
+use actix_web::App;
+use actix_web::HttpServer;
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use swaggapi::utils::SchemalessJson;
+use swaggapi::ApiContext;
+use swaggapi::SwaggapiPage;
 use swaggapi::SwaggerUi;
-use swaggapi::{ApiContext, SwaggapiPage};
 
 #[swaggapi::get("/index")]
 pub async fn index() -> &'static str {
