@@ -34,9 +34,16 @@ impl SwaggerUi {
     /// Returns [`SwaggerUi::default`] but without including the [`PageOfEverything`]
     pub fn without_everything() -> Self {
         Self {
-            path: "/swagger-ui",
-            config: swagger_ui::Config::default(),
             pages: vec![],
+            ..Default::default()
+        }
+    }
+
+    /// Returns [`SwaggerUi::default`] with a given path
+    pub fn with_path(path: &'static str) -> Self {
+        Self {
+            path,
+            ..Default::default()
         }
     }
 
