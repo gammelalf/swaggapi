@@ -93,7 +93,7 @@ pub fn handler(
         _ => None,
     });
     quote! {
-        #[allow(non_upper_case_globals)]
+        #[allow(non_upper_case_globals, missing_docs)]
         #vis static #func_ident: ::swaggapi::internals::SwaggapiHandler =  {
             #tokens
 
