@@ -15,6 +15,7 @@ pub use swaggapi_macro::*;
 pub use self::context::ApiContext;
 pub use self::page::PageOfEverything;
 pub use self::page::SwaggapiPage;
+pub use self::page::SwaggapiPageBuilder;
 #[cfg(feature = "swagger-ui")]
 pub use self::swagger::SwaggerUi;
 

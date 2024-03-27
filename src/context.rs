@@ -1,6 +1,7 @@
 use crate::internals::AccessSwaggapiPageBuilder;
 use crate::internals::SwaggapiHandler;
-use crate::internals::SwaggapiPageBuilder;
+use crate::internals::SwaggapiPageBuilderImpl;
+use crate::page::SwaggapiPageBuilder;
 use crate::PageOfEverything;
 use crate::SwaggapiPage;
 
@@ -52,7 +53,8 @@ impl<T> ApiContext<T> {
                 .into_iter()
                 .chain(self.pages.iter().copied());
             for page in pages {
-                page.add_handler(
+                SwaggapiPageBuilderImpl::add_handler(
+                    page,
                     format!("{}{}", self.path, handler.path),
                     handler,
                     &self.tags,

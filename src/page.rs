@@ -1,9 +1,10 @@
 use std::sync::Arc;
+use std::sync::Mutex;
 
 use openapiv3::OpenAPI;
 
 use crate::internals::AccessSwaggapiPageBuilder;
-use crate::internals::SwaggapiPageBuilder;
+use crate::internals::SwaggapiPageBuilderImpl;
 
 /// A page is a collection of api endpoints
 ///
@@ -29,7 +30,7 @@ pub trait SwaggapiPage: AccessSwaggapiPageBuilder {
 }
 impl<P: AccessSwaggapiPageBuilder> SwaggapiPage for P {
     fn openapi() -> Arc<OpenAPI> {
-        P::builder().build()
+        SwaggapiPageBuilderImpl::build(P::builder())
     }
 }
 
@@ -40,5 +41,28 @@ impl AccessSwaggapiPageBuilder for PageOfEverything {
     fn builder() -> &'static SwaggapiPageBuilder {
         static BUILDER: SwaggapiPageBuilder = SwaggapiPageBuilder::new();
         &BUILDER
+    }
+}
+
+/// Collection of openapi paths and schemas
+///
+/// This struct is intended to be used through a `&'static` provided
+/// by an [`AccessSwaggapiPageBuilder`] type.
+pub struct SwaggapiPageBuilder {
+    pub(crate) title: &'static str,
+    pub(crate) version: &'static str,
+    pub(crate) state: Mutex<Option<SwaggapiPageBuilderImpl>>,
+}
+
+impl SwaggapiPageBuilder {
+    /// Construct a new empty builder
+    ///
+    /// Builders will be stored in `static` variables, so this function has to be `const`.
+    pub const fn new() -> Self {
+        Self {
+            title: "",
+            version: "",
+            state: Mutex::new(None),
+        }
     }
 }

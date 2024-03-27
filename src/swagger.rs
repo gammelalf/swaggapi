@@ -3,7 +3,8 @@ use std::sync::Arc;
 use swagger_ui::UrlObject;
 
 use crate::internals::AccessSwaggapiPageBuilder;
-use crate::internals::SwaggapiPageBuilder;
+use crate::internals::SwaggapiPageBuilderImpl;
+use crate::page::SwaggapiPageBuilder;
 use crate::PageOfEverything;
 use crate::SwaggapiPage;
 
@@ -91,7 +92,10 @@ const _: () = {
                 )
                 .route("config.json", serve_static(move || Json(config)));
             for (_, file_name, builder) in self.pages {
-                scope = scope.route(file_name, serve_static(|| Json(builder.build())));
+                scope = scope.route(
+                    file_name,
+                    serve_static(|| Json(SwaggapiPageBuilderImpl::build(builder))),
+                );
             }
             for file_name in swagger_ui::Assets::iter() {
                 if let Some(file_content) = swagger_ui::Assets::get(&file_name) {
@@ -148,7 +152,7 @@ const _: () = {
             for (_, file_name, builder) in value.pages {
                 router = router.route(
                     &format!("/swagger-ui/{file_name}"),
-                    serve_static(|| Json(builder.build())),
+                    serve_static(|| Json(SwaggapiPageBuilderImpl::build(builder))),
                 );
             }
             for file_name in swagger_ui::Assets::iter() {
