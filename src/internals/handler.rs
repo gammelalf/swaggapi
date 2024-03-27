@@ -1,8 +1,8 @@
 use openapiv3::Responses;
-use schemars::gen::SchemaGenerator;
 
 use crate::handler_argument::HandlerArgumentFns;
 use crate::internals::HttpMethod;
+use crate::internals::SchemaGenerator;
 
 /// Meta information about a handler gathered by the [`#[operation]`](crate::operation) macro
 #[derive(Copy, Clone, Debug)]

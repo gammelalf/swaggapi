@@ -6,10 +6,6 @@ use openapiv3::Parameter;
 use openapiv3::ParameterData;
 use openapiv3::ParameterSchemaOrContent;
 use openapiv3::RequestBody;
-use schemars::gen::SchemaGenerator;
-use schemars::schema::InstanceType;
-use schemars::schema::ObjectValidation;
-use schemars::schema::SingleOrVec;
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 
@@ -17,7 +13,7 @@ use crate::handler_argument::simple_request_body;
 use crate::handler_argument::HandlerArgument;
 use crate::handler_argument::ShouldBeHandlerArgument;
 use crate::handler_argument::SimpleRequestBody;
-use crate::internals::convert_schema;
+use crate::internals::SchemaGenerator;
 
 impl ShouldBeHandlerArgument for String {}
 impl HandlerArgument for String {
@@ -42,7 +38,7 @@ impl HandlerArgument for web::Bytes {
 impl<T> ShouldBeHandlerArgument for web::Json<T> {}
 impl<T: DeserializeOwned + JsonSchema> HandlerArgument for web::Json<T> {
     fn request_body(gen: &mut SchemaGenerator) -> Option<RequestBody> {
-        let schema = convert_schema(gen.subschema_for::<T>());
+        let schema = gen.generate::<T>();
         Some(simple_request_body(SimpleRequestBody {
             mime_type: mime::APPLICATION_JSON,
             schema: Some(schema),
@@ -53,7 +49,7 @@ impl<T: DeserializeOwned + JsonSchema> HandlerArgument for web::Json<T> {
 impl<T> ShouldBeHandlerArgument for web::Form<T> {}
 impl<T: DeserializeOwned + JsonSchema> HandlerArgument for web::Form<T> {
     fn request_body(gen: &mut SchemaGenerator) -> Option<RequestBody> {
-        let schema = convert_schema(gen.subschema_for::<T>());
+        let schema = gen.generate::<T>();
         Some(simple_request_body(SimpleRequestBody {
             mime_type: mime::APPLICATION_WWW_FORM_URLENCODED,
             schema: Some(schema),
@@ -64,30 +60,20 @@ impl<T: DeserializeOwned + JsonSchema> HandlerArgument for web::Form<T> {
 impl<T> ShouldBeHandlerArgument for web::Path<T> {}
 impl<T: DeserializeOwned + JsonSchema> HandlerArgument for web::Path<T> {
     fn parameters(gen: &mut SchemaGenerator) -> Vec<Parameter> {
-        let schema = T::json_schema(gen).into_object();
+        let Some((obj, _)) = gen.generate_object::<T>() else {
+            warn!("Unsupported handler argument: {}", type_name::<Self>());
+            return Vec::new();
+        };
 
-        match schema.instance_type {
-            Some(SingleOrVec::Single(instance_type)) if *instance_type == InstanceType::Object => {}
-            _ => {
-                warn!("Unsupported handler argument: {}", type_name::<Self>());
-                return Vec::new();
-            }
-        }
-        let ObjectValidation {
-            required,
-            properties,
-            .. // TODO check other fields for relevance
-        } = *schema.object.unwrap_or_default();
-
-        properties
+        obj.properties
             .into_iter()
             .map(|(name, schema)| Parameter::Path {
                 parameter_data: ParameterData {
-                    required: required.contains(&name),
+                    required: obj.required.contains(&name),
                     name,
                     description: None,
                     deprecated: None,
-                    format: ParameterSchemaOrContent::Schema(convert_schema(schema)),
+                    format: ParameterSchemaOrContent::Schema(schema.unbox()),
                     example: None,
                     examples: Default::default(),
                     explode: None,
@@ -102,30 +88,20 @@ impl<T: DeserializeOwned + JsonSchema> HandlerArgument for web::Path<T> {
 impl<T> ShouldBeHandlerArgument for web::Query<T> {}
 impl<T: DeserializeOwned + JsonSchema> HandlerArgument for web::Query<T> {
     fn parameters(gen: &mut SchemaGenerator) -> Vec<Parameter> {
-        let schema = T::json_schema(gen).into_object();
+        let Some((obj, _)) = gen.generate_object::<T>() else {
+            warn!("Unsupported handler argument: {}", type_name::<Self>());
+            return Vec::new();
+        };
 
-        match schema.instance_type {
-            Some(SingleOrVec::Single(instance_type)) if *instance_type == InstanceType::Object => {}
-            _ => {
-                warn!("Unsupported handler argument: {}", type_name::<Self>());
-                return Vec::new();
-            }
-        }
-        let ObjectValidation {
-            required,
-            properties,
-            .. // TODO check other fields for relevance
-        } = *schema.object.unwrap_or_default();
-
-        properties
+        obj.properties
             .into_iter()
             .map(|(name, schema)| Parameter::Query {
                 parameter_data: ParameterData {
-                    required: required.contains(&name),
+                    required: obj.required.contains(&name),
                     name,
                     description: None,
                     deprecated: None,
-                    format: ParameterSchemaOrContent::Schema(convert_schema(schema)),
+                    format: ParameterSchemaOrContent::Schema(schema.unbox()),
                     example: None,
                     examples: Default::default(),
                     explode: None,

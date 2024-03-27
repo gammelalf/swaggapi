@@ -6,7 +6,6 @@ use bytes::Buf;
 use bytes::Bytes;
 use bytes::BytesMut;
 use openapiv3::Responses;
-use schemars::gen::SchemaGenerator;
 use schemars::JsonSchema;
 use serde::Serialize;
 
@@ -15,6 +14,7 @@ use crate::as_responses::ok_empty;
 use crate::as_responses::ok_json;
 use crate::as_responses::ok_text;
 use crate::as_responses::AsResponses;
+use crate::internals::SchemaGenerator;
 
 impl AsResponses for &'static str {
     fn responses(_gen: &mut SchemaGenerator) -> Responses {

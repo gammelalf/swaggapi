@@ -4,9 +4,11 @@ mod convert_schema;
 mod handler;
 mod http_method;
 mod page_builder;
+mod schema_generator;
 
 pub use self::convert_schema::convert_schema;
 pub use self::handler::SwaggapiHandler;
 pub use self::http_method::HttpMethod;
 pub use self::page_builder::AccessSwaggapiPageBuilder;
 pub use self::page_builder::SwaggapiPageBuilder;
+pub use self::schema_generator::SchemaGenerator;

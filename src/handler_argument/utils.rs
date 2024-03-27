@@ -1,11 +1,11 @@
 use openapiv3::RequestBody;
-use schemars::gen::SchemaGenerator;
 use serde::de::DeserializeOwned;
 
 use crate::handler_argument::simple_request_body;
 use crate::handler_argument::HandlerArgument;
 use crate::handler_argument::ShouldBeHandlerArgument;
 use crate::handler_argument::SimpleRequestBody;
+use crate::internals::SchemaGenerator;
 use crate::utils::SchemalessJson;
 
 impl<T: DeserializeOwned> ShouldBeHandlerArgument for SchemalessJson<T> {}

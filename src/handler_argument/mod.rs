@@ -13,7 +13,8 @@ use openapiv3::Parameter;
 use openapiv3::ReferenceOr;
 use openapiv3::RequestBody;
 use openapiv3::Schema;
-use schemars::gen::SchemaGenerator;
+
+use crate::internals::SchemaGenerator;
 
 /// Marker trait
 pub trait ShouldBeHandlerArgument {}

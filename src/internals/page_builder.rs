@@ -1,5 +1,4 @@
 use std::collections::BTreeMap;
-use std::mem;
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -11,12 +10,11 @@ use openapiv3::Operation;
 use openapiv3::PathItem;
 use openapiv3::Paths;
 use openapiv3::ReferenceOr;
-use schemars::gen::SchemaGenerator;
-use schemars::gen::SchemaSettings;
 use schemars::schema::Schema;
 
 use crate::internals::convert_schema;
 use crate::internals::HttpMethod;
+use crate::internals::SchemaGenerator;
 use crate::internals::SwaggapiHandler;
 
 /// This trait associates one static instance of a [`SwaggapiPageBuilder`] to its implementor.
@@ -107,22 +105,23 @@ impl SwaggapiPageBuilder {
         let state = guard.get_or_insert_with(Default::default);
         state.last_build = None;
 
-        let (parameters, mut request_body, responses) = state.generate_schema(|gen| {
-            let mut parameters = Vec::new();
-            let mut request_body = Vec::new();
-            for arg in handler.handler_arguments {
-                if let Some(arg) = arg.as_ref() {
-                    parameters.extend(
-                        (arg.parameters)(&mut *gen)
-                            .into_iter()
-                            .map(ReferenceOr::Item),
-                    );
-                    request_body.extend((arg.request_body)(&mut *gen));
+        let (parameters, mut request_body, responses) =
+            SchemaGenerator::employ(&mut state.schemas, |gen| {
+                let mut parameters = Vec::new();
+                let mut request_body = Vec::new();
+                for arg in handler.handler_arguments {
+                    if let Some(arg) = arg.as_ref() {
+                        parameters.extend(
+                            (arg.parameters)(&mut *gen)
+                                .into_iter()
+                                .map(ReferenceOr::Item),
+                        );
+                        request_body.extend((arg.request_body)(&mut *gen));
+                    }
                 }
-            }
-            let responses = (handler.responses)(&mut *gen);
-            (parameters, request_body, responses)
-        });
+                let responses = (handler.responses)(&mut *gen);
+                (parameters, request_body, responses)
+            });
 
         let summary = handler.doc.get(0).map(|line| line.trim().to_string());
         let description = summary.clone().map(|summary| {
@@ -212,30 +211,5 @@ impl SwaggapiPageBuilder {
 
         state.last_build = Some(open_api.clone());
         open_api
-    }
-}
-
-impl SwaggapiPageBuilderState {
-    /// Generate a schema, writing sub schemas to the state.
-    ///
-    /// [`SchemaGenerator`] is not [`Send`], so we can't just put it into our [`SwaggapiPageBuilderState`]
-    /// which is "shared" across thread.
-    /// So as awkward workaround, we only store [`SchemaGenerator`]'s relevant state, get a new generator for each schema
-    /// and temporarily swap the relevant state with us.
-    fn generate_schema<T>(&mut self, func: impl FnOnce(&mut SchemaGenerator) -> T) -> T {
-        // Create SchemaGenerator and give him our schemas
-        let mut settings = SchemaSettings::openapi3();
-        settings.visitors = Vec::new();
-        let mut gen = SchemaGenerator::new(settings);
-        let definitions_mut = gen.definitions_mut();
-        *definitions_mut = mem::take(&mut self.schemas);
-
-        // Generate the new schema
-        let schema = func(&mut gen);
-
-        // Take our (potentially modified) schemas back
-        self.schemas = gen.take_definitions();
-
-        schema
     }
 }

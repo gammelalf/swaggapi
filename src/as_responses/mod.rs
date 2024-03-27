@@ -7,10 +7,9 @@ use openapiv3::ReferenceOr;
 use openapiv3::Response;
 use openapiv3::Responses;
 use openapiv3::StatusCode;
-use schemars::gen::SchemaGenerator;
 use schemars::JsonSchema;
 
-use crate::internals::convert_schema;
+use crate::internals::SchemaGenerator;
 
 #[cfg(feature = "actix")]
 mod actix;
@@ -109,7 +108,7 @@ pub fn ok_json<T: JsonSchema>(gen: &mut SchemaGenerator) -> Responses {
             mime_type: mime::APPLICATION_JSON,
             description: "".to_string(), // TODO take the schema's
             media_type: Some(MediaType {
-                schema: Some(convert_schema(gen.subschema_for::<T>())),
+                schema: Some(gen.generate::<T>()),
                 ..Default::default()
             }),
         },

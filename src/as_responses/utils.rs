@@ -1,11 +1,11 @@
 use openapiv3::Responses;
 use openapiv3::StatusCode;
-use schemars::gen::SchemaGenerator;
 use serde::Serialize;
 
 use crate::as_responses::simple_responses;
 use crate::as_responses::AsResponses;
 use crate::as_responses::SimpleResponse;
+use crate::internals::SchemaGenerator;
 use crate::utils::SchemalessJson;
 
 impl<T: Serialize> AsResponses for SchemalessJson<T> {
