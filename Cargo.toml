@@ -19,7 +19,7 @@ default = ["swagger-ui"]
 swagger-ui = ["dep:swagger-ui"]
 
 actix = ["dep:actix-web"]
-axum = ["dep:axum", "dep:bytes"]
+axum = ["dep:axum", "dep:bytes", "dep:tower"]
 
 actix-files = ["actix", "dep:actix-files"]
 
@@ -39,3 +39,4 @@ actix-files = { version = "~0.6", optional = true }
 
 axum = { version = "~0.7", optional = true }
 bytes = { version = "~1", optional = true }
+tower = { version = "~0.4", optional = true }

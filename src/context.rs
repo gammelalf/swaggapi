@@ -60,14 +60,36 @@ impl<T> ApiContext<T> {
             }
         }
     }
+
+    fn map_framework_impl<U>(self, func: impl FnOnce(T) -> U) -> ApiContext<U> {
+        let Self {
+            path,
+            handlers,
+            pages,
+            tags,
+            framework_impl,
+        } = self;
+        ApiContext {
+            path,
+            handlers,
+            pages,
+            tags,
+            framework_impl: func(framework_impl),
+        }
+    }
 }
 
 #[cfg(feature = "actix")]
 const _: () = {
+    use std::future::Future;
+
+    use actix_web::body::MessageBody;
     use actix_web::dev::AppService;
     use actix_web::dev::HttpServiceFactory;
     use actix_web::dev::ServiceFactory;
     use actix_web::dev::ServiceRequest;
+    use actix_web::dev::ServiceResponse;
+    use actix_web::dev::Transform;
     use actix_web::Scope;
 
     impl ApiContext<Scope> {
@@ -81,6 +103,66 @@ const _: () = {
         /// ```
         pub fn new(path: &str) -> Self {
             Self::with_framework_impl(path.to_string(), Scope::new(path))
+        }
+    }
+
+    impl<T> ApiContext<Scope<T>>
+    where
+        T: ServiceFactory<ServiceRequest, Config = (), Error = actix_web::Error, InitError = ()>,
+    {
+        /// Registers a context-wide middleware.
+        ///
+        /// See [`App::wrap`](actix_web::App::wrap) or [`Scope::wrap`] for more details.
+        pub fn wrap<M, B>(
+            self,
+            middleware: M,
+        ) -> ApiContext<
+            Scope<
+                impl ServiceFactory<
+                    ServiceRequest,
+                    Config = (),
+                    Response = ServiceResponse<B>,
+                    Error = actix_web::Error,
+                    InitError = (),
+                >,
+            >,
+        >
+        where
+            M: Transform<
+                    T::Service,
+                    ServiceRequest,
+                    Response = ServiceResponse<B>,
+                    Error = actix_web::Error,
+                    InitError = (),
+                > + 'static,
+            B: MessageBody,
+        {
+            self.map_framework_impl(|scope| scope.wrap(middleware))
+        }
+
+        /// Registers a context-wide function middleware.
+        ///
+        /// See [`App::wrap_fn`](actix_web::App::wrap_fn) or [`Scope::wrap_fn`] for more details.
+        pub fn wrap_fn<F, R, B>(
+            self,
+            middleware: F,
+        ) -> ApiContext<
+            Scope<
+                impl ServiceFactory<
+                    ServiceRequest,
+                    Config = (),
+                    Response = ServiceResponse<B>,
+                    Error = actix_web::Error,
+                    InitError = (),
+                >,
+            >,
+        >
+        where
+            F: Fn(ServiceRequest, &T::Service) -> R + Clone + 'static,
+            R: Future<Output = Result<ServiceResponse<B>, actix_web::Error>>,
+            B: MessageBody,
+        {
+            self.map_framework_impl(|scope| scope.wrap_fn(middleware))
         }
     }
 
@@ -105,9 +187,15 @@ const _: () = {
 const _: () = {
     use std::borrow::Cow;
     use std::collections::BTreeMap;
+    use std::convert::Infallible;
 
+    use axum::extract::Request;
+    use axum::response::IntoResponse;
     use axum::routing::MethodRouter;
+    use axum::routing::Route;
     use axum::routing::Router;
+    use tower::Layer;
+    use tower::Service;
 
     impl ApiContext<Router> {
         /// Create a new context
@@ -120,6 +208,34 @@ const _: () = {
         /// ```
         pub fn new(path: &str) -> Self {
             Self::with_framework_impl(path.to_string(), Router::new())
+        }
+
+        /// Apply a [`tower::Layer`] to all routes in the context.
+        ///
+        /// See [`Router::layer`] for more details.
+        pub fn layer<L>(self, layer: L) -> Self
+        where
+            L: Layer<Route> + Clone + Send + 'static,
+            L::Service: Service<Request> + Clone + Send + 'static,
+            <L::Service as Service<Request>>::Response: IntoResponse + 'static,
+            <L::Service as Service<Request>>::Error: Into<Infallible> + 'static,
+            <L::Service as Service<Request>>::Future: Send + 'static,
+        {
+            self.map_framework_impl(|router| router.layer(layer))
+        }
+
+        /// Apply a [`tower::Layer`] to the context that will only run if the request matches a route.
+        ///
+        /// See [`Router::route_layer`] for more details.
+        pub fn route_layer<L>(self, layer: L) -> Self
+        where
+            L: Layer<Route> + Clone + Send + 'static,
+            L::Service: Service<Request> + Clone + Send + 'static,
+            <L::Service as Service<Request>>::Response: IntoResponse + 'static,
+            <L::Service as Service<Request>>::Error: Into<Infallible> + 'static,
+            <L::Service as Service<Request>>::Future: Send + 'static,
+        {
+            self.map_framework_impl(|router| router.route_layer(layer))
         }
     }
 
