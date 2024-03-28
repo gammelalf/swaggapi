@@ -22,6 +22,9 @@ pub struct SwaggapiHandler {
     /// The handler's identifier
     pub ident: &'static str,
 
+    /// Tags set through `#[operation(..., tags(...))]`
+    pub tags: &'static [&'static str],
+
     /// The handler's return type's [`AsResponses::responses`]
     pub responses: fn(&mut SchemaGenerator) -> Responses,
 

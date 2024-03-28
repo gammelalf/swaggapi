@@ -1,11 +1,11 @@
-use proc_macro2::Ident;
 use proc_macro2::Literal;
 use proc_macro2::Span;
 use proc_macro2::TokenStream;
 use proc_macro2::TokenTree;
-use quote::format_ident;
+use proc_macro2::{Delimiter, Group, Ident};
 use quote::quote;
 use quote::ToTokens;
+use quote::{format_ident, quote_spanned};
 use syn::FnArg;
 use syn::ItemFn;
 use syn::Meta;
@@ -50,6 +50,32 @@ pub fn handler(
         .remove(&Ident::new("path", Span::call_site()))
         .or_else(|| positional.next())
         .unwrap();
+    let tags = keyword
+        .remove(&Ident::new("tags", Span::call_site()))
+        .unwrap_or(TokenTree::Group(Group::new(
+            Delimiter::Bracket,
+            TokenStream::new(),
+        )));
+
+    if let Some(value) = positional.next() {
+        let err = quote_spanned! {value.span()=>
+            compile_error!("Unexpected value");
+        };
+        return quote! {
+            #err
+            #tokens
+        };
+    }
+
+    if let Some(key) = keyword.into_keys().next() {
+        let err = quote_spanned! {key.span()=>
+            compile_error!("Unknown key");
+        };
+        return quote! {
+            #err
+            #tokens
+        };
+    }
 
     let func_ident = &sig.ident;
     let argument_type = sig
@@ -118,6 +144,7 @@ pub fn handler(
                     #doc,
                 )*],
                 ident: #ident,
+                tags: &#tags,
                 responses: <#return_type as ::swaggapi::as_responses::AsResponses>::responses,
                 handler_arguments: &FNS,
                 actix: ::swaggapi::impl_Foo_actix!(

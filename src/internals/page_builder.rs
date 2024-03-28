@@ -61,7 +61,7 @@ impl SwaggapiPageBuilderImpl {
         builder: &SwaggapiPageBuilder,
         handler_path: String,
         handler: SwaggapiHandler,
-        tags: &[&'static str],
+        context_tags: &[&'static str],
     ) {
         let mut guard = builder.state.lock().unwrap();
         let state = guard.get_or_insert_with(Default::default);
@@ -104,7 +104,13 @@ impl SwaggapiPageBuilderImpl {
             responses,
             deprecated: handler.deprecated,
             security: None, // TODO
-            tags: tags.iter().copied().map(String::from).collect(),
+            tags: handler
+                .tags
+                .iter()
+                .chain(context_tags.iter())
+                .copied()
+                .map(String::from)
+                .collect(),
             // Not supported:
             external_docs: Default::default(),
             servers: Default::default(),

@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use proc_macro2::Ident;
-use proc_macro2::Literal;
 use proc_macro2::TokenStream;
 use proc_macro2::TokenTree;
+use proc_macro2::{Delimiter, Ident};
+use proc_macro2::{Group, Literal};
 use quote::quote;
 use quote::quote_spanned;
 use syn::parse2;
@@ -40,6 +40,7 @@ fn parse_args(args: TokenStream) -> Result<Args, TokenStream> {
         match punct {
             TokenTree::Punct(punct) if punct.as_char() == ',' => {
                 args_vec.push(Arg::Pos(first));
+                continue;
             }
             TokenTree::Punct(punct) if punct.as_char() == '=' => {
                 let TokenTree::Ident(first) = first else {
@@ -54,25 +55,38 @@ fn parse_args(args: TokenStream) -> Result<Args, TokenStream> {
                     });
                 };
 
-                match args_iter.next() {
-                    None => {
-                        args_vec.push(Arg::Key(first, second));
-                        break;
-                    }
-                    Some(TokenTree::Punct(punct)) if punct.as_char() == ',' => {
-                        args_vec.push(Arg::Key(first, second));
-                    }
-                    Some(token) => {
-                        return Err(quote_spanned!(token.span()=>
-                            compile_error!(concat!("expected `,` got `", stringify!(#token), "`"));
-                        ))
-                    }
-                }
+                args_vec.push(Arg::Key(first, second));
+            }
+            TokenTree::Group(group) if matches!(group.delimiter(), Delimiter::Parenthesis) => {
+                let TokenTree::Ident(first) = first else {
+                    return Err(quote_spanned!(first.span()=>
+                        compile_error!(concat!("expected identifier got `", stringify!(#first), "`"));
+                    ));
+                };
+
+                args_vec.push(Arg::Key(
+                    first,
+                    TokenTree::Group(Group::new(Delimiter::Bracket, group.stream())),
+                ));
             }
             _ => {
                 return Err(quote_spanned! {punct.span()=>
-                    compile_error!(concat!("expected `,` or `=` got `", stringify!(#punct), "`"));
+                    compile_error!(concat!("expected `,`, `=` or `(` got `", stringify!(#punct), "`"));
                 })
+            }
+        }
+
+        match args_iter.next() {
+            None => {
+                break;
+            }
+            Some(TokenTree::Punct(punct)) if punct.as_char() == ',' => {
+                continue;
+            }
+            Some(token) => {
+                return Err(quote_spanned!(token.span()=>
+                    compile_error!(concat!("expected `,` got `", stringify!(#token), "`"));
+                ))
             }
         }
     }
