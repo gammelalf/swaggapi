@@ -8,7 +8,7 @@ members = [
 [package]
 name = "swaggapi"
 description = "Auto-generated OpenAPI documentation"
-version = "0.1.1"
+version = "0.2.1"
 edition = "2021"
 license = "MIT"
 authors = ["gammelalf"]
@@ -24,7 +24,7 @@ axum = ["dep:axum", "dep:bytes", "dep:tower"]
 actix-files = ["actix", "dep:actix-files"]
 
 [dependencies]
-swaggapi-macro = { version = "0.1.0", path = "./swaggapi-macro" }
+swaggapi-macro = { version = "0.2.0", path = "./swaggapi-macro" }
 openapiv3 = "~2"
 indexmap = "~2"
 mime = "~0.3"
