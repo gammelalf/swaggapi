@@ -44,25 +44,93 @@ impl AccessSwaggapiPageBuilder for PageOfEverything {
     }
 }
 
-/// Collection of openapi paths and schemas
-///
-/// This struct is intended to be used through a `&'static` provided
-/// by an [`AccessSwaggapiPageBuilder`] type.
 pub struct SwaggapiPageBuilder {
-    pub(crate) title: &'static str,
-    pub(crate) version: &'static str,
+    pub(crate) title: Option<&'static str>,
+    pub(crate) description: Option<&'static str>,
+    pub(crate) terms_of_service: Option<&'static str>,
+    pub(crate) contact_name: Option<&'static str>,
+    pub(crate) contact_url: Option<&'static str>,
+    pub(crate) contact_email: Option<&'static str>,
+    pub(crate) license_name: Option<&'static str>,
+    pub(crate) license_url: Option<&'static str>,
+    pub(crate) version: Option<&'static str>,
+
+    pub(crate) filename: Option<&'static str>,
+
     pub(crate) state: Mutex<Option<SwaggapiPageBuilderImpl>>,
 }
 
 impl SwaggapiPageBuilder {
     /// Construct a new empty builder
-    ///
-    /// Builders will be stored in `static` variables, so this function has to be `const`.
     pub const fn new() -> Self {
         Self {
-            title: "",
-            version: "",
+            title: None,
+            description: None,
+            terms_of_service: None,
+            contact_name: None,
+            contact_url: None,
+            contact_email: None,
+            license_name: None,
+            license_url: None,
+            version: None,
+            filename: None,
             state: Mutex::new(None),
         }
+    }
+
+    /// The title of the application.
+    pub const fn title(mut self, title: &'static str) -> Self {
+        self.title = Some(title);
+        self
+    }
+
+    /// A short description of the application.
+    pub const fn description(mut self, description: &'static str) -> Self {
+        self.description = Some(description);
+        self
+    }
+
+    /// A URL to the Terms of Service for the API.
+    pub const fn terms_of_service(mut self, terms: &'static str) -> Self {
+        self.terms_of_service = Some(terms);
+        self
+    }
+
+    /// The identifying name of the contact person/organization for the exposed API.
+    pub const fn contact_name(mut self, name: &'static str) -> Self {
+        self.contact_name = Some(name);
+        self
+    }
+
+    /// The URL pointing to the contact information for the exposed API.
+    pub const fn contact_url(mut self, url: &'static str) -> Self {
+        self.contact_url = Some(url);
+        self
+    }
+
+    /// The email address of the contact person/organization for the exposed API.
+    pub const fn contact_email(mut self, email: &'static str) -> Self {
+        self.contact_email = Some(email);
+        self
+    }
+
+    /// The license name used for the API.
+    pub const fn license_name(mut self, name: &'static str) -> Self {
+        self.license_name = Some(name);
+        self
+    }
+
+    /// A URL to the license used for the API.
+    ///
+    /// You should also set the `license_name`.
+    pub const fn license_url(mut self, url: &'static str) -> Self {
+        self.license_url = Some(url);
+        self
+    }
+
+    /// The filename the page will be served as
+    pub const fn filename(mut self, file: &'static str) -> Self {
+        self.filename = Some(file);
+        self
     }
 }

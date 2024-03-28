@@ -10,6 +10,7 @@ use serde::Serialize;
 use swaggapi::utils::SchemalessJson;
 use swaggapi::ApiContext;
 use swaggapi::SwaggapiPage;
+use swaggapi::SwaggapiPageBuilder;
 use swaggapi::SwaggerUi;
 
 #[swaggapi::get("/index")]
@@ -47,11 +48,14 @@ pub async fn schemaless_json(json2: SchemalessJson<()>) -> SchemalessJson<()> {
     json2
 }
 
+// Derive style api page
 #[derive(SwaggapiPage)]
 pub struct ApiV1;
 
-#[derive(SwaggapiPage)]
-pub struct ApiV2;
+// Builder style api page
+pub static API_V2: SwaggapiPageBuilder = SwaggapiPageBuilder::new()
+    .title("My application")
+    .description("This is the second revision of my application's api");
 
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -69,15 +73,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
             )
             .service(
                 ApiContext::new("/api/v2")
-                    .tag("v2")
-                    .page(ApiV2)
+                    .page(&API_V2)
                     .handler(json)
                     .handler(index),
             )
             .service(
                 SwaggerUi::default()
                     .page("API v1", "openapi_v1.json", ApiV1)
-                    .page("API v2", "openapi_v2.json", ApiV2),
+                    .page("API v2", "openapi_v2.json", &API_V2),
             )
     })
     .bind(("127.0.0.1", 8080))?

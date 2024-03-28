@@ -3,7 +3,9 @@ use std::sync::Arc;
 
 use indexmap::IndexMap;
 use openapiv3::Components;
+use openapiv3::Contact;
 use openapiv3::Info;
+use openapiv3::License;
 use openapiv3::OpenAPI;
 use openapiv3::Operation;
 use openapiv3::PathItem;
@@ -135,7 +137,20 @@ impl SwaggapiPageBuilderImpl {
     ///
     /// The build operation is cached (hence the `Arc`) so feel free to call this eagerly.
     pub fn build(builder: &SwaggapiPageBuilder) -> Arc<OpenAPI> {
-        let mut guard = builder.state.lock().unwrap();
+        let SwaggapiPageBuilder {
+            title,
+            description,
+            terms_of_service,
+            contact_name,
+            contact_url,
+            contact_email,
+            license_name,
+            license_url,
+            version,
+            filename: _,
+            state,
+        } = builder;
+        let mut guard = state.lock().unwrap();
         let state = guard.get_or_insert_with(Default::default);
 
         if let Some(open_api) = state.last_build.clone() {
@@ -145,12 +160,27 @@ impl SwaggapiPageBuilderImpl {
         let open_api = Arc::new(OpenAPI {
             openapi: "3.0.0".to_string(),
             info: Info {
-                title: builder.title.to_string(),
-                description: None,
-                terms_of_service: None,
-                contact: None,
-                license: None,
-                version: builder.version.to_string(),
+                title: title.unwrap_or("Unnamed API").to_string(),
+                description: description.map(str::to_string),
+                terms_of_service: terms_of_service.map(str::to_string),
+                contact: (contact_name.is_some()
+                    || contact_url.is_some()
+                    || contact_email.is_some())
+                .then(|| Contact {
+                    name: contact_name.map(str::to_string),
+                    url: contact_url.map(str::to_string),
+                    email: contact_email.map(str::to_string),
+                    extensions: Default::default(),
+                }),
+                license: (license_name.is_some() || license_url.is_some()).then(|| License {
+                    name: builder
+                        .license_name
+                        .unwrap_or("Unnamed License")
+                        .to_string(),
+                    url: license_url.map(str::to_string),
+                    extensions: Default::default(),
+                }),
+                version: version.unwrap_or("v0.0.0").to_string(),
                 extensions: IndexMap::new(),
             },
             servers: vec![],
