@@ -53,14 +53,16 @@ pub async fn schemaless_json(json2: SchemalessJson<()>) -> SchemalessJson<()> {
 #[derive(SwaggapiPage)]
 #[page(
     title = "My application",
-    description = "This is the first revision of my application's api"
+    description = "This is the first revision of my application's api",
+    filename = "openapi_v1.json"
 )]
 pub struct ApiV1;
 
 // Builder style api page
 pub static API_V2: SwaggapiPageBuilder = SwaggapiPageBuilder::new()
     .title("My application")
-    .description("This is the second revision of my application's api");
+    .description("This is the second revision of my application's api")
+    .filename("openapi_v2.json");
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -80,8 +82,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         )
         .merge(
             SwaggerUi::default()
-                .page("API v1", "openapi_v1.json", ApiV1)
-                .page("API v2", "openapi_v2.json", &API_V2),
+                .page("API v1", ApiV1)
+                .page("API v2", &API_V2),
         );
 
     let listener = TcpListener::bind("127.0.0.1:8080").await?;

@@ -109,4 +109,7 @@ pub use swaggapi_macro::trace;
 /// All arguments are of shape `key = "value"`
 /// where the list of keys and their description
 /// can be taken from [`SwaggapiPageBuilder`](crate::SwaggapiPageBuilder)'s methods.
+///
+/// ### Noteworthy differences from the builder:
+/// - `filename` will default to the struct's identifier (followed by `.json`)
 pub use swaggapi_macro::SwaggapiPage;

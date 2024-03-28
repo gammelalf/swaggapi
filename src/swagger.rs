@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::sync::Arc;
 
 use swagger_ui::UrlObject;
@@ -19,7 +20,13 @@ pub struct SwaggerUi {
     /// by the [`SwaggapiPage`]s you added through [`SwaggerUi::page`].
     pub config: swagger_ui::Config,
 
-    pages: Vec<(&'static str, &'static str, &'static SwaggapiPageBuilder)>,
+    /// Running count of pages without filenames used to generate unique names for them
+    unnamed_pages: usize,
+    pages: Vec<(
+        &'static str,
+        Cow<'static, str>,
+        &'static SwaggapiPageBuilder,
+    )>,
 }
 impl Default for SwaggerUi {
     /// Normally the swagger ui is served under `"/swagger-ui"` and contains the [`PageOfEverything`]
@@ -27,7 +34,12 @@ impl Default for SwaggerUi {
         Self {
             path: "/swagger-ui",
             config: swagger_ui::Config::default(),
-            pages: vec![("Entire API", "openapi.json", PageOfEverything.get_builder())],
+            unnamed_pages: 0,
+            pages: vec![(
+                "Entire API",
+                Cow::Borrowed("openapi.json"),
+                PageOfEverything.get_builder(),
+            )],
         }
     }
 }
@@ -49,14 +61,14 @@ impl SwaggerUi {
     }
 
     /// Adds a [`SwaggapiPage`] to the ui
-    pub fn page(
-        mut self,
-        display_name: &'static str,
-        file_name: &'static str,
-        page: impl SwaggapiPage,
-    ) -> Self {
+    pub fn page(mut self, display_name: &'static str, page: impl SwaggapiPage) -> Self {
+        let builder = page.get_builder();
+        let filename = builder.filename.map(Cow::Borrowed).unwrap_or_else(|| {
+            self.unnamed_pages += 1;
+            Cow::Owned(format!("openapi_{}.json", self.unnamed_pages))
+        });
         self.pages
-            .push((display_name, file_name, page.get_builder()));
+            .push((display_name, filename, page.get_builder()));
         self
     }
 }
@@ -79,7 +91,7 @@ const _: () = {
             config.urls.extend(
                 self.pages
                     .iter()
-                    .map(|&(page_name, file_name, _)| UrlObject::new(page_name, file_name)),
+                    .map(|(page_name, file_name, _)| UrlObject::new(page_name, file_name)),
             );
             let config = Arc::new(config);
 
@@ -91,7 +103,7 @@ const _: () = {
                 .route("config.json", serve_static(move || Json(config)));
             for (_, file_name, builder) in self.pages {
                 scope = scope.route(
-                    file_name,
+                    &file_name,
                     serve_static(|| Json(SwaggapiPageBuilderImpl::build(builder))),
                 );
             }
@@ -134,7 +146,7 @@ const _: () = {
                 value
                     .pages
                     .iter()
-                    .map(|&(page_name, file_name, _)| UrlObject::new(page_name, file_name)),
+                    .map(|(page_name, file_name, _)| UrlObject::new(page_name, file_name)),
             );
             let config = Arc::new(config);
 

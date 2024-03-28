@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
 use proc_macro2::Ident;
+use proc_macro2::Literal;
+use proc_macro2::Span;
 use proc_macro2::TokenStream;
 use proc_macro2::TokenTree;
 use quote::quote;
@@ -53,6 +55,11 @@ impl Parse for Page {
         input.parse::<Token![struct]>()?;
         let ident = input.parse::<Ident>()?;
         input.parse::<Token![;]>()?;
+
+        kwargs
+            .entry(Ident::new("filename", Span::call_site()))
+            .or_insert_with(|| TokenTree::Literal(Literal::string(&format!("{ident}.json"))));
+
         Ok(Self { ident, kwargs })
     }
 }
