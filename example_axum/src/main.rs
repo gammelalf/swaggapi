@@ -51,6 +51,10 @@ pub async fn schemaless_json(json2: SchemalessJson<()>) -> SchemalessJson<()> {
 
 // Derive style api page
 #[derive(SwaggapiPage)]
+#[page(
+    title = "My application",
+    description = "This is the first revision of my application's api"
+)]
 pub struct ApiV1;
 
 // Builder style api page

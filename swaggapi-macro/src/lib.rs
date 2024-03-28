@@ -3,7 +3,7 @@ mod page;
 
 use proc_macro::TokenStream;
 
-#[proc_macro_derive(SwaggapiPage)]
+#[proc_macro_derive(SwaggapiPage, attributes(page))]
 pub fn derive_page(input: TokenStream) -> TokenStream {
     page::page(input.into()).into()
 }

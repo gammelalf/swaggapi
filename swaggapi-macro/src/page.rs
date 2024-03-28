@@ -1,37 +1,72 @@
-use proc_macro2::TokenStream;
-use quote::quote;
-use quote::quote_spanned;
-use syn::parse2;
-use syn::spanned::Spanned;
-use syn::Fields;
-use syn::ItemStruct;
+use std::collections::HashMap;
+
+use proc_macro2::{Ident, TokenStream, TokenTree};
+use quote::{quote, ToTokens};
+use syn::parse::{Parse, ParseStream};
+use syn::MetaList;
+use syn::{bracketed, parse2};
+use syn::{Token, Visibility};
 
 pub fn page(input: TokenStream) -> TokenStream {
-    let ItemStruct {
-        attrs,
-        vis: _,
-        struct_token: _,
-        ident,
-        generics: _,
-        fields,
-        semi_token: _,
-    } = match parse2(input) {
-        Ok(s) => s,
-        Err(err) => return err.into_compile_error(),
-    };
-
-    if !matches!(&fields, Fields::Unit) {
-        return quote_spanned! {fields.span()=>
-            compile_error!("Expected unit struct");
-        };
+    match parse2::<Page>(input) {
+        Ok(page) => page.into_token_stream(),
+        Err(err) => err.into_compile_error(),
     }
+}
 
-    quote! {
-        impl ::swaggapi::internals::AccessSwaggapiPageBuilder for #ident {
-            fn get_builder(&self) -> &'static ::swaggapi::SwaggapiPageBuilder {
-                static BUILDER: ::swaggapi::SwaggapiPageBuilder = ::swaggapi::SwaggapiPageBuilder::new();
-                &BUILDER
+struct Page {
+    ident: Ident,
+    kwargs: HashMap<Ident, TokenTree>,
+}
+
+impl Parse for Page {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let mut kwargs = HashMap::new();
+        while input.peek(Token![#]) {
+            input.parse::<Token![#]>()?;
+            let content;
+            bracketed!(content in input);
+
+            let meta: MetaList = content.parse()?;
+            if meta.path.is_ident("page") {
+                meta.parse_nested_meta(|nested| {
+                    let key = nested.path.require_ident()?;
+                    if kwargs.contains_key(key) {
+                        return Err(syn::Error::new_spanned(key, "Duplicate key"));
+                    }
+
+                    let value = nested.value()?.parse()?;
+                    kwargs.insert(key.clone(), value);
+
+                    Ok(())
+                })?;
             }
         }
+
+        input.parse::<Visibility>()?;
+        input.parse::<Token![struct]>()?;
+        let ident = input.parse::<Ident>()?;
+        input.parse::<Token![;]>()?;
+        Ok(Self { ident, kwargs })
+    }
+}
+
+impl ToTokens for Page {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Self { ident, kwargs } = self;
+        let keys = kwargs.keys();
+        let values = kwargs.values();
+        tokens.extend(quote! {
+            impl ::swaggapi::internals::AccessSwaggapiPageBuilder for #ident {
+                fn get_builder(&self) -> &'static ::swaggapi::SwaggapiPageBuilder {
+                    static BUILDER: ::swaggapi::SwaggapiPageBuilder = ::swaggapi::SwaggapiPageBuilder::new()
+                    #(
+                        .#keys(#values)
+                    )*
+                    ;
+                    &BUILDER
+                }
+            }
+        });
     }
 }
