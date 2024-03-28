@@ -19,9 +19,9 @@ use crate::internals::SwaggapiPageBuilderImpl;
 ///
 /// ## How
 ///
-/// 1. Use [`#[derive(SwaggapiPage)]`](macro@SwaggapiPage) on a unit struct to create a new api page
-/// 2. Pass the unit struct to [`ApiContext::page`] to add some endpoints
-/// 3. Pass the unit struct to [`SwaggerUi::page`] to expose it in the swagger ui
+/// 1. Use [`#[derive(SwaggapiPage)]`](macro@crate::SwaggapiPage) on a unit struct to create a new api page
+/// 2. Pass the unit struct to [`ApiContext::page`](crate::ApiContext::page) to add some endpoints
+/// 3. Pass the unit struct to [`SwaggerUi::page`](crate::SwaggerUi::page) to expose it in the swagger ui
 pub trait SwaggapiPage: AccessSwaggapiPageBuilder {
     /// Returns the [`OpenAPI`] file
     ///
@@ -44,6 +44,20 @@ impl AccessSwaggapiPageBuilder for PageOfEverything {
     }
 }
 
+/// Builder used to configure an api page
+///
+/// This type is either used internally by the [`#[derive(SwaggapiPage)]`](macro@crate::SwaggapiPage) macro
+/// or can be used manually to create an [`SwaggapiPage`](trait@SwaggapiPage) without macro:
+///
+/// ```rust
+/// # use swaggapi::SwaggapiPageBuilder;
+/// static MY_CUSTOM_API_PAGE: SwaggapiPageBuilder = SwaggapiPageBuilder::new()
+///     .title("My custom subset of api endpoints");
+///
+/// // use &MY_CUSTOM_API_PAGE wherever an `impl SwaggapiPage` is required
+/// ```
+///
+/// This example is semantically equivalent to the one from [`#[derive(SwaggapiPage)]`](macro@crate::SwaggapiPage).
 pub struct SwaggapiPageBuilder {
     pub(crate) title: Option<&'static str>,
     pub(crate) description: Option<&'static str>,

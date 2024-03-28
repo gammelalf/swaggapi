@@ -24,8 +24,8 @@ pub trait ShouldBeHandlerArgument {}
 /// or a [parameter object](https://spec.openapis.org/oas/v3.0.3#parameter-object)
 ///
 /// This type should be implemented by everything which implements
-/// [`FromRequest`] when using [axum] or
-/// [`FromRequest`] / [`FromRequestParts`] when using [actix]
+/// [`FromRequest`](::axum::extract::FromRequest) / [`FromRequestParts`](::axum::extract::FromRequestParts) when using [axum](::axum) or
+/// [`FromRequest`] when using [actix]
 pub trait HandlerArgument: ShouldBeHandlerArgument {
     /// Get the [request body object](https://spec.openapis.org/oas/v3.0.3#request-body-object) describing `Self`
     ///

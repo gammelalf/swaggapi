@@ -28,11 +28,15 @@ pub trait AccessSwaggapiPageBuilder {
     ///
     /// This method will always (using [`#[derive(SwaggapiPage)]`](macro@crate::SwaggapiPage)) be implemented as:
     /// ```rust
-    /// # use swaggapi::page::SwaggapiPageBuilder;
+    /// # use swaggapi::SwaggapiPageBuilder;
+    /// # use swaggapi::internals::AccessSwaggapiPageBuilder;
+    /// # struct Test;
+    /// # impl AccessSwaggapiPageBuilder for Test {
     /// fn get_builder(&self) -> &'static SwaggapiPageBuilder {
     ///     static BUILDER: SwaggapiPageBuilder = SwaggapiPageBuilder::new();
     ///     &BUILDER
     /// }
+    /// # }
     /// ```
     fn get_builder(&self) -> &'static SwaggapiPageBuilder;
 }
@@ -56,7 +60,7 @@ impl SwaggapiPageBuilderImpl {
     /// Add a handler to this api page
     ///
     /// The handler will be registered under a custom `handler_path` instead of using the `handler.path`.
-    /// This allows an [`ApiContext`] to modify the path.
+    /// This allows an [`ApiContext`](crate::ApiContext) to modify the path.
     pub fn add_handler(
         builder: &SwaggapiPageBuilder,
         handler_path: String,

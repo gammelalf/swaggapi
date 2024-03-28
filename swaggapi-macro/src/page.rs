@@ -1,11 +1,17 @@
 use std::collections::HashMap;
 
-use proc_macro2::{Ident, TokenStream, TokenTree};
-use quote::{quote, ToTokens};
-use syn::parse::{Parse, ParseStream};
+use proc_macro2::Ident;
+use proc_macro2::TokenStream;
+use proc_macro2::TokenTree;
+use quote::quote;
+use quote::ToTokens;
+use syn::bracketed;
+use syn::parse::Parse;
+use syn::parse::ParseStream;
+use syn::parse2;
 use syn::MetaList;
-use syn::{bracketed, parse2};
-use syn::{Token, Visibility};
+use syn::Token;
+use syn::Visibility;
 
 pub fn page(input: TokenStream) -> TokenStream {
     match parse2::<Page>(input) {

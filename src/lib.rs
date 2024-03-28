@@ -5,12 +5,13 @@ pub mod as_responses;
 mod context;
 pub mod handler_argument;
 pub mod internals;
+mod macro_docs;
 mod page;
 #[cfg(feature = "swagger-ui")]
 mod swagger;
 pub mod utils;
 
-pub use swaggapi_macro::*;
+pub use macro_docs::*;
 
 pub use self::context::ApiContext;
 pub use self::page::PageOfEverything;

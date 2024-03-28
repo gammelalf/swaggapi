@@ -4,7 +4,7 @@ use crate::handler_argument::HandlerArgumentFns;
 use crate::internals::HttpMethod;
 use crate::internals::SchemaGenerator;
 
-/// Meta information about a handler gathered by the [`#[operation]`](crate::operation) macro
+/// Meta information about a handler gathered by the [`#[handler]`](crate::handler) macro
 #[derive(Copy, Clone, Debug)]
 pub struct SwaggapiHandler {
     /// The http method the handler handles
@@ -25,10 +25,10 @@ pub struct SwaggapiHandler {
     /// Tags set through `#[operation(..., tags(...))]`
     pub tags: &'static [&'static str],
 
-    /// The handler's return type's [`AsResponses::responses`]
+    /// The handler's return type's [`AsResponses::responses`](crate::as_responses::AsResponses::responses)
     pub responses: fn(&mut SchemaGenerator) -> Responses,
 
-    /// The handler's arguments' [`HandlerArgument`]'s methods
+    /// The handler's arguments' [`HandlerArgument`](crate::handler_argument::HandlerArgument)'s methods
     pub handler_arguments: &'static [Option<HandlerArgumentFns>],
 
     /// The actual function stored in an actix specific format

@@ -20,7 +20,7 @@ mod utils;
 /// A type returned by a handler which can be described with a [responses object](https://spec.openapis.org/oas/v3.0.3#responses-object)
 ///
 /// This type should be implemented by everything which implements
-/// [`IntoResponse`] when using [axum] or
+/// [`IntoResponse`](::axum::response::IntoResponse) when using [axum](::axum) or
 /// [`Responder`] when using [actix]
 pub trait AsResponses {
     /// Get the [responses object](https://spec.openapis.org/oas/v3.0.3#responses-object) describing `Self`

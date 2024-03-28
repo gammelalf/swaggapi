@@ -1,11 +1,14 @@
+use proc_macro2::Delimiter;
+use proc_macro2::Group;
+use proc_macro2::Ident;
 use proc_macro2::Literal;
 use proc_macro2::Span;
 use proc_macro2::TokenStream;
 use proc_macro2::TokenTree;
-use proc_macro2::{Delimiter, Group, Ident};
+use quote::format_ident;
 use quote::quote;
+use quote::quote_spanned;
 use quote::ToTokens;
-use quote::{format_ident, quote_spanned};
 use syn::FnArg;
 use syn::ItemFn;
 use syn::Meta;

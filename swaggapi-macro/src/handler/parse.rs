@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 
+use proc_macro2::Delimiter;
+use proc_macro2::Group;
+use proc_macro2::Ident;
+use proc_macro2::Literal;
 use proc_macro2::TokenStream;
 use proc_macro2::TokenTree;
-use proc_macro2::{Delimiter, Ident};
-use proc_macro2::{Group, Literal};
 use quote::quote;
 use quote::quote_spanned;
 use syn::parse2;
