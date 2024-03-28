@@ -36,8 +36,8 @@ impl<T> ApiContext<T> {
     }
 
     /// Attach a [`SwaggapiPage`] this context's handlers will be added to
-    pub fn page<Page: SwaggapiPage>(mut self, _: Page) -> Self {
-        self.pages.push(Page::builder());
+    pub fn page(mut self, page: impl SwaggapiPage) -> Self {
+        self.pages.push(page.get_builder());
         self
     }
 
@@ -49,7 +49,7 @@ impl<T> ApiContext<T> {
 
     fn add_to_pages(&self) {
         for handler in self.handlers.iter().copied() {
-            let pages = [PageOfEverything::builder()]
+            let pages = [PageOfEverything.get_builder()]
                 .into_iter()
                 .chain(self.pages.iter().copied());
             for page in pages {

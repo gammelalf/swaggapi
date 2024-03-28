@@ -28,7 +28,7 @@ pub fn page(input: TokenStream) -> TokenStream {
 
     quote! {
         impl ::swaggapi::internals::AccessSwaggapiPageBuilder for #ident {
-            fn builder() -> &'static ::swaggapi::SwaggapiPageBuilder {
+            fn get_builder(&self) -> &'static ::swaggapi::SwaggapiPageBuilder {
                 static BUILDER: ::swaggapi::SwaggapiPageBuilder = ::swaggapi::SwaggapiPageBuilder::new();
                 &BUILDER
             }

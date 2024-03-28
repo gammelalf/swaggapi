@@ -26,11 +26,11 @@ pub trait SwaggapiPage: AccessSwaggapiPageBuilder {
     /// Returns the [`OpenAPI`] file
     ///
     /// The internal build process is cached (hence the `Arc`) so feel free to call this eagerly.
-    fn openapi() -> Arc<OpenAPI>;
+    fn openapi(&self) -> Arc<OpenAPI>;
 }
 impl<P: AccessSwaggapiPageBuilder> SwaggapiPage for P {
-    fn openapi() -> Arc<OpenAPI> {
-        SwaggapiPageBuilderImpl::build(P::builder())
+    fn openapi(&self) -> Arc<OpenAPI> {
+        SwaggapiPageBuilderImpl::build(self.get_builder())
     }
 }
 
@@ -38,7 +38,7 @@ impl<P: AccessSwaggapiPageBuilder> SwaggapiPage for P {
 pub struct PageOfEverything;
 /// "Manual expansion" of [`derive(SwaggapiPage)`](crate::SwaggapiPage)
 impl AccessSwaggapiPageBuilder for PageOfEverything {
-    fn builder() -> &'static SwaggapiPageBuilder {
+    fn get_builder(&self) -> &'static SwaggapiPageBuilder {
         static BUILDER: SwaggapiPageBuilder = SwaggapiPageBuilder::new();
         &BUILDER
     }

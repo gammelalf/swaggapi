@@ -26,33 +26,17 @@ pub trait AccessSwaggapiPageBuilder {
     ///
     /// This method will always (using [`#[derive(SwaggapiPage)]`](macro@crate::SwaggapiPage)) be implemented as:
     /// ```rust
-    /// # use swaggapi::internals::SwaggapiPageBuilder;
-    /// fn builder() -> &'static SwaggapiPageBuilder {
+    /// # use swaggapi::page::SwaggapiPageBuilder;
+    /// fn get_builder(&self) -> &'static SwaggapiPageBuilder {
     ///     static BUILDER: SwaggapiPageBuilder = SwaggapiPageBuilder::new();
     ///     &BUILDER
     /// }
     /// ```
-    fn builder() -> &'static SwaggapiPageBuilder;
-
-    /// Syntactic sugar
-    ///
-    /// This method allows function like this:
-    /// ```rust
-    /// use swaggapi::SwaggapiPage;
-    /// fn use_page(page: impl SwaggapiPage) {
-    ///     page.get_builder();
-    /// }
-    /// ```
-    ///
-    /// Instead of this:
-    /// ```rust
-    /// use swaggapi::SwaggapiPage;
-    /// fn use_page<P: SwaggapiPage>() {
-    ///     P::builder();
-    /// }
-    /// ```
+    fn get_builder(&self) -> &'static SwaggapiPageBuilder;
+}
+impl AccessSwaggapiPageBuilder for &'static SwaggapiPageBuilder {
     fn get_builder(&self) -> &'static SwaggapiPageBuilder {
-        Self::builder()
+        *self
     }
 }
 

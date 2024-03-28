@@ -27,7 +27,7 @@ impl Default for SwaggerUi {
         Self {
             path: "/swagger-ui",
             config: swagger_ui::Config::default(),
-            pages: vec![("Entire API", "openapi.json", PageOfEverything::builder())],
+            pages: vec![("Entire API", "openapi.json", PageOfEverything.get_builder())],
         }
     }
 }
@@ -55,10 +55,8 @@ impl SwaggerUi {
         file_name: &'static str,
         page: impl SwaggapiPage,
     ) -> Self {
-        fn helper<T: SwaggapiPage>(_: T) -> &'static SwaggapiPageBuilder {
-            T::builder()
-        }
-        self.pages.push((display_name, file_name, helper(page)));
+        self.pages
+            .push((display_name, file_name, page.get_builder()));
         self
     }
 }
