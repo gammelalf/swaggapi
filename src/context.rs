@@ -30,9 +30,13 @@ impl<T> ApiContext<T> {
     /// Add a handler to the context
     ///
     /// The handler will be routed under the context's path i.e. `"{ctx_path}/{handler_path}"`.
-    pub fn handler(mut self, handler: SwaggapiHandler) -> Self {
+    #[allow(private_bounds)]
+    pub fn handler(mut self, handler: SwaggapiHandler) -> Self
+    where
+        Self: ValidFrameworkImpl,
+    {
         self.handlers.push(handler);
-        self
+        ValidFrameworkImpl::handler(self, handler)
     }
 
     /// Attach a [`SwaggapiPage`] this context's handlers will be added to
@@ -79,6 +83,12 @@ impl<T> ApiContext<T> {
             framework_impl: func(framework_impl),
         }
     }
+}
+
+/// Helper trait to have framework independent methods
+/// use framework specific implementations
+trait ValidFrameworkImpl {
+    fn handler(self, handler: SwaggapiHandler) -> Self;
 }
 
 #[cfg(feature = "actix")]
@@ -168,6 +178,16 @@ const _: () = {
         }
     }
 
+    impl<T> ValidFrameworkImpl for ApiContext<Scope<T>>
+    where
+        Scope<T>: HttpServiceFactory,
+        T: ServiceFactory<ServiceRequest, Config = (), Error = actix_web::Error, InitError = ()>,
+    {
+        fn handler(self, handler: SwaggapiHandler) -> Self {
+            self.map_framework_impl(|x| x.route(&handler.path, (handler.actix)()))
+        }
+    }
+
     impl<T> HttpServiceFactory for ApiContext<Scope<T>>
     where
         Scope<T>: HttpServiceFactory,
@@ -175,12 +195,7 @@ const _: () = {
     {
         fn register(self, config: &mut AppService) {
             self.add_to_pages();
-
-            let mut scope = self.framework_impl;
-            for handler in self.handlers {
-                scope = scope.route(handler.path, (handler.actix)());
-            }
-            scope.register(config)
+            self.framework_impl.register(config)
         }
     }
 };
@@ -188,12 +203,10 @@ const _: () = {
 #[cfg(feature = "axum")]
 const _: () = {
     use std::borrow::Cow;
-    use std::collections::BTreeMap;
     use std::convert::Infallible;
 
     use axum::extract::Request;
     use axum::response::IntoResponse;
-    use axum::routing::MethodRouter;
     use axum::routing::Route;
     use axum::routing::Router;
     use tower::Layer;
@@ -241,27 +254,21 @@ const _: () = {
         }
     }
 
+    impl ValidFrameworkImpl for ApiContext<Router> {
+        fn handler(self, handler: SwaggapiHandler) -> Self {
+            let path = if self.path.is_empty() {
+                Cow::Borrowed(handler.path)
+            } else {
+                Cow::Owned(format!("{}{}", self.path, handler.path))
+            };
+            self.map_framework_impl(|x| x.route(&path, (handler.axum)()))
+        }
+    }
+
     impl From<ApiContext<Router>> for Router {
         fn from(context: ApiContext<Router>) -> Self {
             context.add_to_pages();
-
-            let mut routes: BTreeMap<Cow<'static, str>, MethodRouter> = BTreeMap::new();
-            for handler in context.handlers {
-                let path = if context.path.is_empty() {
-                    Cow::Borrowed(handler.path)
-                } else {
-                    Cow::Owned(format!("{}{}", context.path, handler.path))
-                };
-                let existing = routes.remove(&path).unwrap_or_default();
-                let new = (handler.axum)();
-                routes.insert(path, existing.merge(new));
-            }
-
-            routes
-                .into_iter()
-                .fold(context.framework_impl, |router, (path, method_router)| {
-                    router.route(&path, method_router)
-                })
+            context.framework_impl
         }
     }
 };
