@@ -152,23 +152,23 @@ const _: () = {
 
             let mut router = Router::<S>::new()
                 .route(
-                    "/swagger-ui/",
+                    &format!("{}/", value.path),
                     serve_static(|| Redirect::to("index.html?configUrl=config.json")),
                 )
                 .route(
-                    "/swagger-ui/config.json",
+                    &format!("{}/config.json", value.path),
                     serve_static(move || Json(config)),
                 );
             for (_, file_name, builder) in value.pages {
                 router = router.route(
-                    &format!("/swagger-ui/{file_name}"),
+                    &format!("{}/{file_name}", value.path),
                     serve_static(|| Json(SwaggapiPageBuilderImpl::build(builder))),
                 );
             }
             for file_name in swagger_ui::Assets::iter() {
                 if let Some(file_content) = swagger_ui::Assets::get(&file_name) {
                     router = router.route(
-                        &format!("/swagger-ui/{file_name}"),
+                        &format!("{}/{file_name}", value.path),
                         serve_static(|| Response::new(Body::from(file_content))),
                     );
                 }
