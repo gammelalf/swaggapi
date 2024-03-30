@@ -7,11 +7,7 @@ use openapiv3::ParameterSchemaOrContent;
 use openapiv3::ReferenceOr;
 use openapiv3::Response;
 use openapiv3::Responses;
-use openapiv3::Schema;
-use openapiv3::SchemaKind;
 use openapiv3::StatusCode;
-use openapiv3::StringType;
-use openapiv3::Type;
 use schemars::JsonSchema;
 use serde::Serialize;
 
@@ -71,7 +67,7 @@ impl<T: AsResponses, E: AsResponses> AsResponses for Result<T, E> {
 }
 
 impl AsResponses for Redirect {
-    fn responses(_: &mut SchemaGenerator) -> Responses {
+    fn responses(gen: &mut SchemaGenerator) -> Responses {
         Responses {
             responses: IndexMap::from_iter([(
                 StatusCode::Range(3),
@@ -84,10 +80,7 @@ impl AsResponses for Redirect {
                             style: Default::default(),
                             required: false,
                             deprecated: None,
-                            format: ParameterSchemaOrContent::Schema(ReferenceOr::Item(Schema {
-                                schema_data: Default::default(),
-                                schema_kind: SchemaKind::Type(Type::String(StringType::default())),
-                            })),
+                            format: ParameterSchemaOrContent::Schema(gen.generate::<String>()),
                             example: None,
                             examples: Default::default(),
                             extensions: Default::default(),

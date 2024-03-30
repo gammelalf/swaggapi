@@ -1,11 +1,18 @@
 use std::borrow::Cow;
 
+use axum::response::Redirect;
 use axum::Json;
 use bytes::buf::Chain;
 use bytes::Buf;
 use bytes::Bytes;
 use bytes::BytesMut;
+use indexmap::IndexMap;
+use openapiv3::Header;
+use openapiv3::ParameterSchemaOrContent;
+use openapiv3::ReferenceOr;
+use openapiv3::Response;
 use openapiv3::Responses;
+use openapiv3::StatusCode;
 use schemars::JsonSchema;
 use serde::Serialize;
 
@@ -118,6 +125,34 @@ where
         }
 
         res
+    }
+}
+
+impl AsResponses for Redirect {
+    fn responses(gen: &mut SchemaGenerator) -> Responses {
+        Responses {
+            responses: IndexMap::from_iter([(
+                StatusCode::Range(3),
+                ReferenceOr::Item(Response {
+                    description: "A generic http redirect".to_string(),
+                    headers: IndexMap::from_iter([(
+                        "Location".to_string(),
+                        ReferenceOr::Item(Header {
+                            description: None,
+                            style: Default::default(),
+                            required: false,
+                            deprecated: None,
+                            format: ParameterSchemaOrContent::Schema(gen.generate::<String>()),
+                            example: None,
+                            examples: Default::default(),
+                            extensions: Default::default(),
+                        }),
+                    )]),
+                    ..Default::default()
+                }),
+            )]),
+            ..Default::default()
+        }
     }
 }
 
