@@ -4,12 +4,69 @@ use proc_macro2::Delimiter;
 use proc_macro2::Group;
 use proc_macro2::Ident;
 use proc_macro2::Literal;
+use proc_macro2::Span;
 use proc_macro2::TokenStream;
 use proc_macro2::TokenTree;
 use quote::quote;
 use quote::quote_spanned;
 use syn::parse2;
+use syn::spanned::Spanned;
+use syn::Attribute;
 use syn::ItemFn;
+use syn::Signature;
+use syn::Visibility;
+
+struct LazyFn {
+    outer_attributes: Vec<Attribute>,
+    visibility: Visibility,
+    signature: Signature,
+    body: TokenStream,
+}
+
+fn foo(item: TokenStream) -> syn::Result<LazyFn> {
+    ItemFn::parse(item);
+
+    Attribute::parse_outer(item);
+    Visibility::parse(item);
+    Signature::parse(item);
+
+    let mut input = item.into_iter().fuse();
+    let mut tokens = Vec::new();
+    let mut body = None;
+    for tt in &mut input {
+        match tt {
+            TokenTree::Group(group) if matches!(group.delimiter(), Delimiter::Brace) => {
+                body = Some(group.stream());
+                break;
+            }
+            _ => tokens.push(tt),
+        }
+    }
+    if let Some(unexpected) = input.next() {
+        return Err(syn::Error::new(unexpected.span(), "Unexpected token"));
+    }
+    let Some(body) = body else {
+        return Err(syn::Error::new(
+            tokens
+                .last()
+                .map(|tt| tt.span())
+                .unwrap_or_else(Span::call_site),
+            "Expected function body",
+        ));
+    };
+
+    syn::parse::Parser::parse2(
+        move |input| {
+            Ok(LazyFn {
+                outer_attributes: input.call(Attribute::parse_outer)?,
+                visibility: input.parse()?,
+                signature: input.parse()?,
+                body,
+            })
+        },
+        TokenStream::from_iter(tokens),
+    )
+}
 
 pub fn parse(args: TokenStream, item: TokenStream) -> Result<(Args, ItemFn), TokenStream> {
     match parse2(item) {
