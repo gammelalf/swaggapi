@@ -2,10 +2,10 @@ use std::any::type_name;
 
 use actix_web::web;
 use log::warn;
-use openapiv3::Parameter;
 use openapiv3::ParameterData;
 use openapiv3::ParameterSchemaOrContent;
 use openapiv3::RequestBody;
+use openapiv3::{Parameter, ReferenceOr, Schema, SchemaKind};
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 
@@ -112,5 +112,18 @@ impl<T: DeserializeOwned + JsonSchema> HandlerArgument for web::Query<T> {
                 allow_empty_value: None,
             })
             .collect()
+    }
+}
+
+impl ShouldBeHandlerArgument for web::Payload {}
+impl HandlerArgument for web::Payload {
+    fn request_body(_gen: &mut SchemaGenerator) -> Option<RequestBody> {
+        Some(simple_request_body(SimpleRequestBody {
+            mime_type: mime::APPLICATION_OCTET_STREAM,
+            schema: Some(ReferenceOr::Item(Schema {
+                schema_data: Default::default(),
+                schema_kind: SchemaKind::Any(Default::default()),
+            })),
+        }))
     }
 }
