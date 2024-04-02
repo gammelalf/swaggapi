@@ -1,8 +1,9 @@
+use std::mem;
+
 use ::openapiv3 as openapi;
 use ::schemars::schema as schemars;
 use log::warn;
-use serde::de::value::StrDeserializer;
-use serde::de::DeserializeOwned;
+use openapiv3::AnySchema;
 
 /// Convert a [schemars](::schemars)'s [`Schema`](::schemars::schema::Schema) to a [openapiv3]'s [`Schema`](openapiv3::Schema)
 pub fn convert_schema(schema: schemars::Schema) -> openapi::ReferenceOr<openapi::Schema> {
@@ -85,7 +86,7 @@ fn convert_schema_object(schema: schemars::SchemaObject) -> openapi::ReferenceOr
         })
         .unwrap_or_default();
 
-    let mut kinds = Vec::new();
+    let mut any_schema = AnySchema::default();
     if let Some(subschemas) = subschemas {
         let schemars::SubschemaValidation {
             all_of,
@@ -97,24 +98,16 @@ fn convert_schema_object(schema: schemars::SchemaObject) -> openapi::ReferenceOr
             else_schema,
         } = *subschemas;
         if let Some(all_of) = all_of {
-            kinds.push(openapi::SchemaKind::AllOf {
-                all_of: all_of.into_iter().map(convert_schema).collect(),
-            });
+            any_schema.all_of = all_of.into_iter().map(convert_schema).collect();
         }
         if let Some(any_of) = any_of {
-            kinds.push(openapi::SchemaKind::AnyOf {
-                any_of: any_of.into_iter().map(convert_schema).collect(),
-            });
+            any_schema.any_of = any_of.into_iter().map(convert_schema).collect();
         }
         if let Some(one_of) = one_of {
-            kinds.push(openapi::SchemaKind::OneOf {
-                one_of: one_of.into_iter().map(convert_schema).collect(),
-            });
+            any_schema.one_of = one_of.into_iter().map(convert_schema).collect();
         }
         if let Some(not) = not {
-            kinds.push(openapi::SchemaKind::Not {
-                not: Box::new(convert_schema(*not)),
-            });
+            any_schema.not = Some(Box::new(convert_schema(*not)));
         }
         if if_schema.is_some() {
             warn!("Can't convert `if_schema`");
@@ -126,8 +119,11 @@ fn convert_schema_object(schema: schemars::SchemaObject) -> openapi::ReferenceOr
             warn!("Can't convert `else_schema`");
         }
     }
+
+    let mut types = Vec::new();
     if let Some(instance_type) = instance_type {
         let InstanceTypes {
+            many,
             is_null,
             is_boolean,
             is_object,
@@ -138,87 +134,76 @@ fn convert_schema_object(schema: schemars::SchemaObject) -> openapi::ReferenceOr
         } = InstanceTypes::parse(instance_type);
 
         let mut enum_values = enum_values.unwrap_or_default();
-        let mut types = Vec::new();
+        let mut clone_any_schema = || {
+            if !many {
+                mem::take(&mut any_schema)
+            } else {
+                any_schema.clone()
+            }
+        };
         if is_boolean {
-            types.push(openapi::Type::Boolean(convert_boolean_type(
-                &mut enum_values,
-            )));
+            let mut any_schema = clone_any_schema();
+            convert_boolean_type(&mut any_schema, &mut enum_values);
+            types.push(any_schema);
         }
         if is_object {
-            types.push(openapi::Type::Object(convert_object_type(
-                object,
-                &mut enum_values,
-            )));
+            let mut any_schema = clone_any_schema();
+            convert_object_type(&mut any_schema, object, &mut enum_values);
+            types.push(any_schema);
         }
         if is_array {
-            types.extend(
-                convert_array_type(array, &mut enum_values)
-                    .into_iter()
-                    .map(openapi::Type::Array),
-            );
+            let mut any_schema = clone_any_schema();
+            types.extend(convert_array_type(&mut any_schema, array, &mut enum_values));
         }
         if is_number {
-            types.push(openapi::Type::Number(convert_number_type(
+            let mut any_schema = clone_any_schema();
+            convert_number_type(
+                &mut any_schema,
                 number.clone(),
                 format.as_deref(),
                 &mut enum_values,
-            )));
+            );
+            types.push(any_schema);
         }
         if is_string {
-            types.push(openapi::Type::String(convert_string_type(
-                string,
-                format.as_deref(),
-                &mut enum_values,
-            )));
+            let mut any_schema = clone_any_schema();
+            convert_string_type(&mut any_schema, string, format.as_deref(), &mut enum_values);
+            types.push(any_schema);
         }
         if is_integer {
-            types.push(openapi::Type::Integer(convert_integer_type(
-                number,
+            let mut any_schema = clone_any_schema();
+            convert_integer_type(
+                &mut any_schema,
+                number.clone(),
                 format.as_deref(),
                 &mut enum_values,
-            )));
+            );
+            types.push(any_schema);
         }
 
         if matches!(types.len(), 0 | 1) {
             schema_data.nullable = is_null;
         }
-        match types.len() {
-            0 => {}
-            1 => kinds.push(openapi::SchemaKind::Type(
-                types.pop().expect("Length should be one"),
-            )),
-            _ => kinds.push(openapi::SchemaKind::OneOf {
-                one_of: types
-                    .into_iter()
-                    .map(|typ| {
-                        openapi::ReferenceOr::Item(openapi::Schema {
-                            schema_data: openapi::SchemaData::default(),
-                            schema_kind: openapi::SchemaKind::Type(typ),
-                        })
-                    })
-                    .collect(),
-            }),
-        }
     }
 
-    openapi::ReferenceOr::Item(match kinds.len() {
+    openapi::ReferenceOr::Item(match types.len() {
         0 => openapi::Schema {
             schema_data,
-            schema_kind: openapi::SchemaKind::Any(openapi::AnySchema::default()),
+            schema_kind: openapi::SchemaKind::Any(any_schema),
         },
         1 => openapi::Schema {
             schema_data,
-            schema_kind: kinds.pop().expect("Length should be one"),
+            schema_kind: openapi::SchemaKind::Any(types.pop().expect("Length should be one")),
         },
         _ => openapi::Schema {
             schema_data,
-            schema_kind: openapi::SchemaKind::AllOf {
-                all_of: kinds
+            schema_kind: openapi::SchemaKind::OneOf {
+                one_of: types
                     .into_iter()
-                    .map(|schema_kind| {
+                    .map(|any_schema| {
                         openapi::ReferenceOr::Item(openapi::Schema {
                             schema_data: openapi::SchemaData::default(),
-                            schema_kind,
+                            schema_kind: openapi::SchemaKind::Any(any_schema),
                         })
                     })
                     .collect(),
@@ -229,6 +214,7 @@ fn convert_schema_object(schema: schemars::SchemaObject) -> openapi::ReferenceOr
 
 #[derive(Default)]
 struct InstanceTypes {
+    many: bool,
     is_null: bool,
     is_boolean: bool,
     is_object: bool,
@@ -285,17 +271,24 @@ impl InstanceTypes {
             }
         };
         match input {
-            schemars::SingleOrVec::Single(instance_type) => set(*instance_type),
-            schemars::SingleOrVec::Vec(instance_types) => instance_types.into_iter().for_each(set),
+            schemars::SingleOrVec::Single(instance_type) => {
+                output.many = false;
+                set(*instance_type);
+            }
+            schemars::SingleOrVec::Vec(instance_types) => {
+                output.many = instance_types.len() > 1;
+                instance_types.into_iter().for_each(set)
+            }
         }
         output
     }
 }
 
 fn convert_object_type(
+    any_schema: &mut AnySchema,
     input: Option<Box<schemars::ObjectValidation>>,
     enums: &mut [serde_json::Value],
-) -> openapi::ObjectType {
+) {
     let schemars::ObjectValidation {
         max_properties,
         min_properties,
@@ -316,29 +309,28 @@ fn convert_object_type(
         warn!("Can't convert `enum` for type `object`");
     }
 
-    openapi::ObjectType {
-        properties: properties
-            .into_iter()
-            .map(|(key, schema)| (key, box_reference_or(convert_schema(schema))))
-            .collect(),
-        required: required.into_iter().collect(),
-        additional_properties: additional_properties.map(|additional_properties| {
-            match *additional_properties {
-                schemars::Schema::Bool(boolean) => openapi::AdditionalProperties::Any(boolean),
-                schemars::Schema::Object(object) => {
-                    openapi::AdditionalProperties::Schema(Box::new(convert_schema_object(object)))
-                }
+    any_schema.typ = Some("object".to_string());
+    any_schema.properties = properties
+        .into_iter()
+        .map(|(key, schema)| (key, box_reference_or(convert_schema(schema))))
+        .collect();
+    any_schema.required = required.into_iter().collect();
+    any_schema.additional_properties =
+        additional_properties.map(|additional_properties| match *additional_properties {
+            schemars::Schema::Bool(boolean) => openapi::AdditionalProperties::Any(boolean),
+            schemars::Schema::Object(object) => {
+                openapi::AdditionalProperties::Schema(Box::new(convert_schema_object(object)))
             }
-        }),
-        min_properties: min_properties.map(convert_u32),
-        max_properties: max_properties.map(convert_u32),
-    }
+        });
+    any_schema.min_properties = min_properties.map(convert_u32);
+    any_schema.max_properties = max_properties.map(convert_u32);
 }
 
 fn convert_array_type(
+    any_schema: &mut AnySchema,
     input: Option<Box<schemars::ArrayValidation>>,
     enums: &mut [serde_json::Value],
-) -> Vec<openapi::ArrayType> {
+) -> Vec<AnySchema> {
     let schemars::ArrayValidation {
         items,
         additional_items,
@@ -351,9 +343,7 @@ fn convert_array_type(
     if additional_items.is_some() {
         warn!("Can't convert `additional_items`");
     }
-    let max_items = max_items.map(convert_u32);
-    let min_items = min_items.map(convert_u32);
-    let unique_items = unique_items.unwrap_or(false);
+
     if contains.is_some() {
         warn!("Can't convert `contains`");
     }
@@ -361,14 +351,16 @@ fn convert_array_type(
         warn!("Can't convert `enum` for type `array`");
     }
 
+    any_schema.typ = Some("array".to_string());
+    any_schema.max_items = max_items.map(convert_u32);
+    any_schema.min_items = min_items.map(convert_u32);
+    any_schema.unique_items = unique_items;
+
     let mut arrays = Vec::new();
     let mut push_array = |item: schemars::Schema| {
-        arrays.push(openapi::ArrayType {
-            items: Some(box_reference_or(convert_schema(item))),
-            min_items,
-            max_items,
-            unique_items,
-        })
+        let mut any_schema = any_schema.clone();
+        any_schema.items = Some(box_reference_or(convert_schema(item)));
+        arrays.push(any_schema)
     };
     match items {
         None => push_array(schemars::Schema::Bool(true)),
@@ -379,10 +371,11 @@ fn convert_array_type(
 }
 
 fn convert_number_type(
+    any_schema: &mut AnySchema,
     input: Option<Box<schemars::NumberValidation>>,
     format: Option<&str>,
     enums: &mut [serde_json::Value],
-) -> openapi::NumberType {
+) {
     let schemars::NumberValidation {
         multiple_of,
         mut maximum,
@@ -407,32 +400,30 @@ fn convert_number_type(
     let mut enumeration = Vec::new();
     for value in enums {
         match value {
-            serde_json::Value::Null => enumeration.push(None),
+            serde_json::Value::Null => enumeration.push(serde_json::Value::Null),
             serde_json::Value::Number(number) => {
-                if let Some(number) = number.as_f64() {
-                    enumeration.push(Some(number));
-                }
+                enumeration.push(serde_json::Value::Number(number.clone()));
             }
             _ => {}
         }
     }
 
-    openapi::NumberType {
-        format: convert_format(format),
-        multiple_of,
-        exclusive_minimum: exclusive_minimum.is_some(),
-        exclusive_maximum: exclusive_maximum.is_some(),
-        minimum,
-        maximum,
-        enumeration,
-    }
+    any_schema.typ = Some("number".to_string());
+    any_schema.format = format.map(str::to_string);
+    any_schema.multiple_of = multiple_of;
+    any_schema.exclusive_minimum = minimum.is_some().then_some(exclusive_minimum.is_some());
+    any_schema.exclusive_maximum = maximum.is_some().then_some(exclusive_maximum.is_some());
+    any_schema.minimum = minimum;
+    any_schema.maximum = maximum;
+    any_schema.enumeration = enumeration;
 }
 
 fn convert_string_type(
+    any_schema: &mut AnySchema,
     input: Option<Box<schemars::StringValidation>>,
     format: Option<&str>,
     enums: &mut [serde_json::Value],
-) -> openapi::StringType {
+) {
     let schemars::StringValidation {
         max_length,
         min_length,
@@ -442,100 +433,58 @@ fn convert_string_type(
     let mut enumeration = Vec::new();
     for value in enums {
         match value {
-            serde_json::Value::Null => enumeration.push(None),
-            serde_json::Value::String(string) => enumeration.push(Some(std::mem::take(string))),
+            serde_json::Value::Null => enumeration.push(serde_json::Value::Null),
+            serde_json::Value::String(string) => {
+                enumeration.push(serde_json::Value::String(mem::take(string)))
+            }
+
             _ => {}
         }
     }
 
-    openapi::StringType {
-        format: convert_format(format),
-        pattern,
-        enumeration,
-        min_length: min_length.map(convert_u32),
-        max_length: max_length.map(convert_u32),
-    }
+    any_schema.typ = Some("string".to_string());
+    any_schema.format = format.map(str::to_string);
+    any_schema.pattern = pattern;
+    any_schema.enumeration = enumeration;
+    any_schema.min_length = min_length.map(convert_u32);
+    any_schema.max_length = max_length.map(convert_u32);
 }
 
 fn convert_integer_type(
+    any_schema: &mut AnySchema,
     input: Option<Box<schemars::NumberValidation>>,
     format: Option<&str>,
     enums: &mut [serde_json::Value],
-) -> openapi::IntegerType {
-    fn convert_f64(input: f64) -> i64 {
-        if input.fract() != 0.0 {
-            warn!("Integer type has decimal constraints");
-        }
-        input as i64
-    }
-
-    let openapi::NumberType {
-        format: _,
-        multiple_of,
-        exclusive_minimum,
-        exclusive_maximum,
-        minimum,
-        maximum,
-        enumeration: _,
-    } = convert_number_type(input, None, &mut []);
-
-    let mut enumeration = Vec::new();
-    for value in enums {
-        match value {
-            serde_json::Value::Null => enumeration.push(None),
-            serde_json::Value::Number(number) => {
-                if let Some(number) = number.as_i64() {
-                    enumeration.push(Some(number));
-                }
-            }
-            _ => {}
-        }
-    }
-
-    openapi::IntegerType {
-        format: convert_format(format),
-        multiple_of: multiple_of.map(convert_f64),
-        exclusive_minimum,
-        exclusive_maximum,
-        minimum: minimum.map(convert_f64),
-        maximum: maximum.map(convert_f64),
-        enumeration,
-    }
+) {
+    convert_number_type(any_schema, input, format, enums);
+    any_schema.typ = Some("integer".to_string());
+    any_schema.enumeration.retain(|value| match value {
+        serde_json::Value::Null => true,
+        serde_json::Value::Number(number) => number.is_i64() || number.is_u64(),
+        _ => false,
+    });
 }
 
-fn convert_boolean_type(enums: &mut [serde_json::Value]) -> openapi::BooleanType {
+fn convert_boolean_type(any_schema: &mut AnySchema, enums: &mut [serde_json::Value]) {
     let mut enumeration = Vec::new();
     for value in enums {
         match value {
-            serde_json::Value::Null => enumeration.push(None),
+            serde_json::Value::Null => enumeration.push(serde_json::Value::Null),
             serde_json::Value::Bool(bool) => {
-                enumeration.push(Some(*bool));
+                enumeration.push(serde_json::Value::Bool(*bool));
             }
             _ => {}
         }
     }
-    openapi::BooleanType { enumeration }
-}
-
-fn convert_format<T: DeserializeOwned>(input: Option<&str>) -> openapi::VariantOrUnknownOrEmpty<T> {
-    match input {
-        Some(format) => T::deserialize(StrDeserializer::new(format))
-            .map(openapi::VariantOrUnknownOrEmpty::Item)
-            .unwrap_or_else(|_: serde::de::value::Error| {
-                openapi::VariantOrUnknownOrEmpty::Unknown(format.to_string())
-            }),
-        None => openapi::VariantOrUnknownOrEmpty::Empty,
-    }
+    any_schema.typ = Some("boolean".to_string());
+    any_schema.enumeration = enumeration;
 }
 
 fn convert_u32(input: u32) -> usize {
-    match input.try_into() {
-        Ok(output) => output,
-        Err(_) => {
-            warn!("Couldn't convert u32 lossless to usize");
-            usize::MAX
-        }
-    }
+    input.try_into().unwrap_or_else(|_| {
+        warn!("Couldn't convert u32 lossless to usize");
+        usize::MAX
+    })
 }
 
 fn box_reference_or<T>(input: openapi::ReferenceOr<T>) -> openapi::ReferenceOr<Box<T>> {

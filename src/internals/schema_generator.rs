@@ -1,11 +1,11 @@
 use std::mem;
 
-use openapiv3::ObjectType;
 use openapiv3::ReferenceOr;
 use openapiv3::Schema;
 use openapiv3::SchemaData;
 use openapiv3::SchemaKind;
 use openapiv3::Type;
+use openapiv3::{AnySchema, ObjectType};
 use schemars::gen::SchemaGenerator as InnerGenerator;
 use schemars::gen::SchemaSettings;
 use schemars::JsonSchema;
@@ -65,6 +65,48 @@ impl SchemaGenerator {
         let schema = self.generate_refless::<T>().ok()?;
         match schema.schema_kind {
             SchemaKind::Type(Type::Object(obj)) => Some((obj, schema.schema_data)),
+            SchemaKind::Any(AnySchema {
+                typ,
+                pattern: None,
+                multiple_of: None,
+                exclusive_minimum: None,
+                exclusive_maximum: None,
+                minimum: None,
+                maximum: None,
+                properties,
+                required,
+                additional_properties,
+                min_properties,
+                max_properties,
+                items: None,
+                min_items: None,
+                max_items: None,
+                unique_items: None,
+                enumeration,
+                format: None,
+                min_length: None,
+                max_length: None,
+                one_of,
+                all_of,
+                any_of,
+                not: None,
+            }) if typ.as_deref() == Some("object")
+                && enumeration.is_empty()
+                && one_of.is_empty()
+                && all_of.is_empty()
+                && any_of.is_empty() =>
+            {
+                Some((
+                    ObjectType {
+                        properties,
+                        required,
+                        additional_properties,
+                        min_properties,
+                        max_properties,
+                    },
+                    schema.schema_data,
+                ))
+            }
             _ => None,
         }
     }
