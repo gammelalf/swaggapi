@@ -1,3 +1,5 @@
+mod rest;
+
 use std::error::Error;
 
 use actix_web::web::Form;
@@ -69,6 +71,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     HttpServer::new(move || {
         App::new()
+            .service(
+                ApiContext::new("/api/v1/rest")
+                    .tag("rest")
+                    .page(ApiV1)
+                    .handler(rest::create_resource)
+                    .handler(rest::get_resource)
+                    .handler(rest::update_resource)
+                    .handler(rest::delete_resource),
+            )
             .service(
                 ApiContext::new("/api/v1")
                     .tag("v1")

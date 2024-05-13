@@ -1,3 +1,5 @@
+mod rest;
+
 use std::error::Error;
 
 use axum::Json;
@@ -66,7 +68,18 @@ pub static API_V2: SwaggapiPageBuilder = SwaggapiPageBuilder::new()
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    env_logger::init();
+
     let app = Router::new()
+        .merge(
+            ApiContext::new("/api/v1/rest")
+                .tag("rest")
+                .page(ApiV1)
+                .handler(rest::create_resource)
+                .handler(rest::get_resource)
+                .handler(rest::update_resource)
+                .handler(rest::delete_resource),
+        )
         .merge(
             ApiContext::new("/api/v1")
                 .tag("v1")

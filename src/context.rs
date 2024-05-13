@@ -29,7 +29,7 @@ impl<T> ApiContext<T> {
 
     /// Add a handler to the context
     ///
-    /// The handler will be routed under the context's path i.e. `"{ctx_path}/{handler_path}"`.
+    /// The handler will be routed under the context's path i.e. `"{ctx_path}{handler_path}"`.
     #[allow(private_bounds)]
     pub fn handler(mut self, handler: SwaggapiHandler) -> Self
     where
@@ -52,6 +52,23 @@ impl<T> ApiContext<T> {
     }
 
     fn add_to_pages(&self) {
+        // axum paths need to be tweaked
+        // because axum v0.7 uses a different syntax for path parameters than openapi
+        #[cfg(feature = "axum")]
+        let tweak_path = {
+            use std::borrow::Cow;
+
+            use regex::Regex;
+
+            let regex = Regex::new(":([^/]*)").unwrap();
+            move |path: String| match regex.replace_all(&path, "{$1}") {
+                Cow::Borrowed(_) => path,
+                Cow::Owned(new_path) => new_path,
+            }
+        };
+        #[cfg(not(feature = "axum"))]
+        let tweak_path = std::convert::identity;
+
         for handler in self.handlers.iter().copied() {
             let pages = [PageOfEverything.get_builder()]
                 .into_iter()
@@ -59,7 +76,7 @@ impl<T> ApiContext<T> {
             for page in pages {
                 SwaggapiPageBuilderImpl::add_handler(
                     page,
-                    format!("{}{}", self.path, handler.path),
+                    tweak_path(format!("{}{}", self.path, handler.path)),
                     handler,
                     &self.tags,
                 );
