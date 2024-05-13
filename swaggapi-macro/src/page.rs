@@ -35,8 +35,8 @@ impl Parse for Page {
             let content;
             bracketed!(content in input);
 
-            let meta: MetaList = content.parse()?;
-            if meta.path.is_ident("page") {
+            if content.peek(kw::page) {
+                let meta: MetaList = content.parse()?;
                 meta.parse_nested_meta(|nested| {
                     let key = nested.path.require_ident()?;
                     if kwargs.contains_key(key) {
@@ -48,6 +48,11 @@ impl Parse for Page {
 
                     Ok(())
                 })?;
+            } else {
+                // We have to drain `content` because syn would otherwise error with "unexpected token".
+                while !content.is_empty() {
+                    let _: TokenTree = content.parse()?;
+                }
             }
         }
 
@@ -82,4 +87,8 @@ impl ToTokens for Page {
             }
         });
     }
+}
+
+mod kw {
+    syn::custom_keyword!(page);
 }
