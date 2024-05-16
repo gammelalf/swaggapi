@@ -45,6 +45,11 @@ impl AccessSwaggapiPageBuilder for &'static SwaggapiPageBuilder {
     }
 }
 
+/// The parts of a [`SwaggapiPageBuilder`] which are considered [internal](crate::internals)
+///
+/// This struct implements the actual construction of an [`OpenAPI`] document
+/// combining the handlers added trough [`SwaggapiPageBuilderImpl::add_handler`]
+/// and the metadata stored in [`SwaggapiPageBuilder`].
 #[derive(Default)]
 pub struct SwaggapiPageBuilderImpl {
     paths: Paths,

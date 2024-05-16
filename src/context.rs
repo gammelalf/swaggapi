@@ -174,6 +174,16 @@ const _: () = {
     where
         T: ServiceFactory<ServiceRequest, Config = (), Error = actix_web::Error, InitError = ()>,
     {
+        /// Adds a sub context
+        ///
+        /// See [`Scope::service`] (called with another `Scope`).
+        pub fn service(mut self, other: ApiContext<impl HttpServiceFactory + 'static>) -> Self {
+            for handler in other.handlers {
+                self.push_handler(handler);
+            }
+            self.map_framework_impl(|x| x.service(other.framework_impl))
+        }
+
         /// Registers a context-wide middleware.
         ///
         /// See [`App::wrap`](actix_web::App::wrap) or [`Scope::wrap`] for more details.
@@ -276,21 +286,21 @@ const _: () = {
         }
 
         /// Calls [`Router::nest`] while preserving api information
-        pub fn nest(mut self, path: &str, context: ApiContext<Router>) -> Self {
-            let ApiContext {
-                path: _, // Empty for axum
-                handlers,
-                pages: _, // Obsolete as no new handlers
-                tags: _,  // will be added to this context
-                framework_impl,
-            } = context;
-            for mut handler in handlers {
-                // `path` may not be empty as required by `Router::nest`
+        pub fn nest(mut self, path: &str, other: ApiContext<Router>) -> Self {
+            for mut handler in other.handlers {
                 handler.path = format!("{path}{}", handler.path);
 
                 self.push_handler(handler);
             }
-            self.map_framework_impl(|x| x.nest(path, framework_impl))
+            self.map_framework_impl(|x| x.nest(path, other.framework_impl))
+        }
+
+        /// Calls [`Router::merge`] while preserving api information
+        pub fn merge(mut self, other: ApiContext<Router>) -> Self {
+            for handler in other.handlers {
+                self.push_handler(handler);
+            }
+            self.map_framework_impl(|x| x.merge(other.framework_impl))
         }
 
         /// Apply a [`tower::Layer`] to all routes in the context.
