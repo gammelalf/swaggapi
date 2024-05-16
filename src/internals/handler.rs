@@ -1,8 +1,12 @@
+use std::ops::Deref;
+
 use openapiv3::Responses;
 
 use crate::handler_argument::HandlerArgumentFns;
+use crate::internals::ptrset::PtrSet;
 use crate::internals::HttpMethod;
 use crate::internals::SchemaGenerator;
+use crate::SwaggapiPageBuilder;
 
 /// Meta information about a handler gathered by the [`#[handler]`](crate::handler) macro
 #[derive(Copy, Clone, Debug)]
@@ -82,4 +86,39 @@ macro_rules! impl_Foo_axum {
     ($method:expr, $ident:ident) => {
         || $crate::re_exports::axum::routing::MethodRouter::new().on($method.axum(), $ident)
     };
+}
+
+/// Representation of a [`SwaggapiHandler`] used inside [`ApiContext`](crate::ApiContext)
+/// which allows modifications.
+#[derive(Debug)]
+pub struct ContextHandler {
+    /// The original unmodified [`SwaggapiHandler`]
+    pub original: SwaggapiHandler,
+
+    /// The handler's modified path
+    pub path: String,
+
+    /// The handler's modified path
+    pub tags: PtrSet<'static, str>,
+
+    /// The pages the handler should be added to
+    pub pages: PtrSet<'static, SwaggapiPageBuilder>,
+}
+impl ContextHandler {
+    /// Constructs a new `ContextHandler`
+    pub fn new(original: SwaggapiHandler) -> Self {
+        Self {
+            original,
+            path: original.path.to_string(),
+            tags: PtrSet::from_iter(original.tags.iter().copied()),
+            pages: PtrSet::new(),
+        }
+    }
+}
+impl Deref for ContextHandler {
+    type Target = SwaggapiHandler;
+
+    fn deref(&self) -> &Self::Target {
+        &self.original
+    }
 }

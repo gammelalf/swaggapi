@@ -1,3 +1,4 @@
+use core::fmt;
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -72,6 +73,13 @@ pub struct SwaggapiPageBuilder {
     pub(crate) filename: Option<&'static str>,
 
     pub(crate) state: Mutex<Option<SwaggapiPageBuilderImpl>>,
+}
+
+impl fmt::Debug for SwaggapiPageBuilder {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("SwaggapiPageBuilder")
+            .finish_non_exhaustive()
+    }
 }
 
 impl SwaggapiPageBuilder {

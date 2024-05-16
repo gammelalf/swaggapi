@@ -1,6 +1,6 @@
-use crate::internals::AccessSwaggapiPageBuilder;
 use crate::internals::SwaggapiHandler;
 use crate::internals::SwaggapiPageBuilderImpl;
+use crate::internals::{AccessSwaggapiPageBuilder, ContextHandler};
 use crate::page::SwaggapiPageBuilder;
 use crate::PageOfEverything;
 use crate::SwaggapiPage;
@@ -8,79 +8,114 @@ use crate::SwaggapiPage;
 /// An `ApiContext` combines several [`SwaggapiHandler`] under a common path.
 ///
 /// It is also responsible for adding them to [`SwaggapiPage`]s once mounted to your application.
+#[derive(Debug)]
 pub struct ApiContext<Impl> {
-    path: String,
-    handlers: Vec<SwaggapiHandler>,
-    pages: Vec<&'static SwaggapiPageBuilder>,
-    tags: Vec<&'static str>,
+    /* The same collection of handlers in swaggapi and framework specific representation */
+    /// The contained handlers
+    handlers: Vec<ContextHandler>,
+    /// The framework implementation of a "router"
+    ///
+    /// This is a `Router` for axum and a `Scope` for actix.
     framework_impl: Impl,
+
+    /* Parameters added to new handlers */
+    /// A base path all handlers are routed under
+    ///
+    /// This is effectively remembers the argument actix' `Scope` was created with.
+    /// Since `Router` doesn't take a path, this will always be empty for axum.
+    path: String,
+
+    /// Changes have to be applied to already existing `handlers` manually
+    pages: Vec<&'static SwaggapiPageBuilder>,
+
+    /// Changes have to be applied to already existing `handlers` manually
+    tags: Vec<&'static str>,
 }
 
 impl<T> ApiContext<T> {
     fn with_framework_impl(path: String, framework_impl: T) -> Self {
         Self {
-            path,
             handlers: Vec::new(),
+            framework_impl,
+
+            path,
             pages: Vec::new(),
             tags: Vec::new(),
-            framework_impl,
         }
     }
 
     /// Add a handler to the context
-    ///
-    /// The handler will be routed under the context's path i.e. `"{ctx_path}{handler_path}"`.
     #[allow(private_bounds)]
     pub fn handler(mut self, handler: SwaggapiHandler) -> Self
     where
         Self: ValidFrameworkImpl,
     {
-        self.handlers.push(handler);
+        self.push_handler(ContextHandler::new(handler));
+
         ValidFrameworkImpl::handler(self, handler)
     }
 
     /// Attach a [`SwaggapiPage`] this context's handlers will be added to
     pub fn page(mut self, page: impl SwaggapiPage) -> Self {
         self.pages.push(page.get_builder());
+        for handler in &mut self.handlers {
+            handler.pages.insert(page.get_builder());
+        }
         self
     }
 
     /// Add a tag to all of this context's handlers
     pub fn tag(mut self, tag: &'static str) -> Self {
         self.tags.push(tag);
+        for handler in &mut self.handlers {
+            handler.tags.insert(tag);
+        }
         self
     }
 
-    fn add_to_pages(&self) {
-        // axum paths need to be tweaked
-        // because axum v0.7 uses a different syntax for path parameters than openapi
-        #[cfg(feature = "axum")]
-        let tweak_path = {
-            use std::borrow::Cow;
+    /// Adds a [`ContextHandler`] after adding this context's `path`, `tags` and `pages` to it
+    fn push_handler(&mut self, mut handler: ContextHandler) {
+        if !self.path.is_empty() {
+            handler.path = format!("{}{}", self.path, handler.path);
+        }
+        handler.tags.extend(self.tags.iter().copied());
+        handler.pages.extend(self.pages.iter().copied());
+        self.handlers.push(handler);
+    }
 
-            use regex::Regex;
+    /// Adds the handlers to their api pages and returns the contained framework impl
+    fn finish(self) -> T {
+        for mut handler in self.handlers {
+            handler.path = framework_path_to_openapi(handler.path);
 
-            let regex = Regex::new(":([^/]*)").unwrap();
-            move |path: String| match regex.replace_all(&path, "{$1}") {
-                Cow::Borrowed(_) => path,
-                Cow::Owned(new_path) => new_path,
+            SwaggapiPageBuilderImpl::add_handler(PageOfEverything.get_builder(), &handler);
+            for page in handler.pages.iter() {
+                SwaggapiPageBuilderImpl::add_handler(page, &handler);
             }
-        };
-        #[cfg(not(feature = "axum"))]
-        let tweak_path = std::convert::identity;
+        }
+        return self.framework_impl;
 
-        for handler in self.handlers.iter().copied() {
-            let pages = [PageOfEverything.get_builder()]
-                .into_iter()
-                .chain(self.pages.iter().copied());
-            for page in pages {
-                SwaggapiPageBuilderImpl::add_handler(
-                    page,
-                    tweak_path(format!("{}{}", self.path, handler.path)),
-                    handler,
-                    &self.tags,
-                );
+        /// Converts the framework's syntax for path parameters into openapi's
+
+        fn framework_path_to_openapi(framework_path: String) -> String {
+            #[cfg(feature = "axum")]
+            {
+                use std::borrow::Cow;
+                use std::sync::OnceLock;
+
+                use regex::Regex;
+
+                static RE: OnceLock<Regex> = OnceLock::new();
+
+                let regex = RE.get_or_init(|| Regex::new(":([^/]*)").unwrap());
+                match regex.replace_all(&framework_path, "{$1}") {
+                    Cow::Borrowed(_) => framework_path,
+                    Cow::Owned(new_path) => new_path,
+                }
             }
+
+            #[cfg(not(feature = "axum"))]
+            framework_path
         }
     }
 
@@ -211,15 +246,13 @@ const _: () = {
         T: ServiceFactory<ServiceRequest, Config = (), Error = actix_web::Error, InitError = ()>,
     {
         fn register(self, config: &mut AppService) {
-            self.add_to_pages();
-            self.framework_impl.register(config)
+            self.finish().register(config)
         }
     }
 };
 
 #[cfg(feature = "axum")]
 const _: () = {
-    use std::borrow::Cow;
     use std::convert::Infallible;
 
     use axum::extract::Request;
@@ -238,8 +271,26 @@ const _: () = {
         /// # use swaggapi::ApiContext;
         /// let app = Router::new().merge(ApiContext::new("/api"));
         /// ```
-        pub fn new(path: &str) -> Self {
-            Self::with_framework_impl(path.to_string(), Router::new())
+        pub fn new() -> Self {
+            Self::with_framework_impl(String::new(), Router::new())
+        }
+
+        /// Calls [`Router::nest`] while preserving api information
+        pub fn nest(mut self, path: &str, context: ApiContext<Router>) -> Self {
+            let ApiContext {
+                path: _, // Empty for axum
+                handlers,
+                pages: _, // Obsolete as no new handlers
+                tags: _,  // will be added to this context
+                framework_impl,
+            } = context;
+            for mut handler in handlers {
+                // `path` may not be empty as required by `Router::nest`
+                handler.path = format!("{path}{}", handler.path);
+
+                self.push_handler(handler);
+            }
+            self.map_framework_impl(|x| x.nest(path, framework_impl))
         }
 
         /// Apply a [`tower::Layer`] to all routes in the context.
@@ -273,19 +324,13 @@ const _: () = {
 
     impl ValidFrameworkImpl for ApiContext<Router> {
         fn handler(self, handler: SwaggapiHandler) -> Self {
-            let path = if self.path.is_empty() {
-                Cow::Borrowed(handler.path)
-            } else {
-                Cow::Owned(format!("{}{}", self.path, handler.path))
-            };
-            self.map_framework_impl(|x| x.route(&path, (handler.axum)()))
+            self.map_framework_impl(|x| x.route(&handler.path, (handler.axum)()))
         }
     }
 
     impl From<ApiContext<Router>> for Router {
         fn from(context: ApiContext<Router>) -> Self {
-            context.add_to_pages();
-            context.framework_impl
+            context.finish()
         }
     }
 };

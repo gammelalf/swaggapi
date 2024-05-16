@@ -13,10 +13,9 @@ use openapiv3::Paths;
 use openapiv3::ReferenceOr;
 use schemars::schema::Schema;
 
-use crate::internals::convert_schema;
 use crate::internals::HttpMethod;
 use crate::internals::SchemaGenerator;
-use crate::internals::SwaggapiHandler;
+use crate::internals::{convert_schema, ContextHandler};
 use crate::page::SwaggapiPageBuilder;
 
 /// This trait associates one static instance of a [`SwaggapiPageBuilder`] to its implementor.
@@ -58,15 +57,7 @@ pub struct SwaggapiPageBuilderImpl {
 
 impl SwaggapiPageBuilderImpl {
     /// Add a handler to this api page
-    ///
-    /// The handler will be registered under a custom `handler_path` instead of using the `handler.path`.
-    /// This allows an [`ApiContext`](crate::ApiContext) to modify the path.
-    pub fn add_handler(
-        builder: &SwaggapiPageBuilder,
-        handler_path: String,
-        handler: SwaggapiHandler,
-        context_tags: &[&'static str],
-    ) {
+    pub fn add_handler(builder: &SwaggapiPageBuilder, handler: &ContextHandler) {
         let mut guard = builder.state.lock().unwrap();
         let state = guard.get_or_insert_with(Default::default);
         state.last_build = None;
@@ -108,13 +99,7 @@ impl SwaggapiPageBuilderImpl {
             responses,
             deprecated: handler.deprecated,
             security: None, // TODO
-            tags: handler
-                .tags
-                .iter()
-                .chain(context_tags.iter())
-                .copied()
-                .map(String::from)
-                .collect(),
+            tags: handler.tags.iter().map(String::from).collect(),
             // Not supported:
             external_docs: Default::default(),
             servers: Default::default(),
@@ -125,7 +110,7 @@ impl SwaggapiPageBuilderImpl {
         let ReferenceOr::Item(path) = state
             .paths
             .paths
-            .entry(handler_path)
+            .entry(handler.path.to_string())
             .or_insert_with(|| ReferenceOr::Item(PathItem::default()))
         else {
             unreachable!("We only ever insert ReferenceOr::Item. See above")

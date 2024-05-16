@@ -72,26 +72,27 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let app = Router::new()
         .merge(
-            ApiContext::new("/api/v1/rest")
-                .tag("rest")
-                .page(ApiV1)
-                .handler(rest::create_resource)
-                .handler(rest::get_resource)
-                .handler(rest::update_resource)
-                .handler(rest::delete_resource),
-        )
-        .merge(
-            ApiContext::new("/api/v1")
-                .tag("v1")
-                .page(ApiV1)
-                .handler(index)
-                .handler(schemaless_json),
-        )
-        .merge(
-            ApiContext::new("/api/v2")
-                .page(&API_V2)
-                .handler(json)
-                .handler(index),
+            ApiContext::new()
+                .nest(
+                    "/api/v1",
+                    ApiContext::new()
+                        .page(ApiV1)
+                        .handler(index)
+                        .handler(schemaless_json)
+                        .nest(
+                            "/rest",
+                            ApiContext::new()
+                                .tag("rest")
+                                .handler(rest::create_resource)
+                                .handler(rest::get_resource)
+                                .handler(rest::update_resource)
+                                .handler(rest::delete_resource),
+                        ),
+                )
+                .nest(
+                    "/api/v2",
+                    ApiContext::new().page(&API_V2).handler(json).handler(index),
+                ),
         )
         .merge(
             SwaggerUi::default()
