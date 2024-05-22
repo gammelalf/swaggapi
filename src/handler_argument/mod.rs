@@ -37,7 +37,7 @@ pub trait HandlerArgument: ShouldBeHandlerArgument {
     /// Get the [parameter objects](https://spec.openapis.org/oas/v3.0.3#parameter-object) describing `Self`
     ///
     /// Should return an empty `Vec` if `Self` doesn't parse any parameters
-    fn parameters(_gen: &mut SchemaGenerator) -> Vec<Parameter> {
+    fn parameters(_gen: &mut SchemaGenerator, _path: &[&str]) -> Vec<Parameter> {
         Vec::new()
     }
 }
@@ -46,7 +46,7 @@ pub trait HandlerArgument: ShouldBeHandlerArgument {
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub struct HandlerArgumentFns {
     pub(crate) request_body: fn(&mut SchemaGenerator) -> Option<RequestBody>,
-    pub(crate) parameters: fn(&mut SchemaGenerator) -> Vec<Parameter>,
+    pub(crate) parameters: fn(&mut SchemaGenerator, &[&str]) -> Vec<Parameter>,
 }
 
 /// Helper function for building a simple [`RequestBody`]

@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use indexmap::IndexMap;
 use openapiv3::Components;
@@ -11,6 +11,7 @@ use openapiv3::Operation;
 use openapiv3::PathItem;
 use openapiv3::Paths;
 use openapiv3::ReferenceOr;
+use regex::Regex;
 use schemars::schema::Schema;
 
 use crate::internals::HttpMethod;
@@ -73,8 +74,16 @@ impl SwaggapiPageBuilderImpl {
                 let mut request_body = Vec::new();
                 for arg in handler.handler_arguments {
                     if let Some(arg) = arg.as_ref() {
+                        static PATH_PARAM_REGEX: OnceLock<Regex> = OnceLock::new();
+                        let path_param_regex =
+                            PATH_PARAM_REGEX.get_or_init(|| Regex::new(r"\{[^}]*}").unwrap());
+                        let path_params = path_param_regex
+                            .find_iter(&handler.path)
+                            .map(|needle| &handler.path[(needle.start() + 1)..(needle.end() - 1)])
+                            .collect::<Vec<_>>();
+
                         parameters.extend(
-                            (arg.parameters)(&mut *gen)
+                            (arg.parameters)(&mut *gen, &path_params)
                                 .into_iter()
                                 .map(ReferenceOr::Item),
                         );

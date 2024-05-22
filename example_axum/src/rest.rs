@@ -33,8 +33,8 @@ pub async fn create_resource(json: Json<Resource>) -> Json<Uuid> {
 }
 
 #[get("/resource/:uuid")]
-pub async fn get_resource(path: Path<PathUuid>) -> Json<Option<Resource>> {
-    Json(modify(move |map| map.get(&path.uuid).cloned()))
+pub async fn get_resource(path: Path<Uuid>) -> Json<Option<Resource>> {
+    Json(modify(move |map| map.get(&path).cloned()))
 }
 
 #[put("/resource/:uuid")]

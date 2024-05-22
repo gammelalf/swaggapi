@@ -19,7 +19,7 @@ default = ["swagger-ui"]
 swagger-ui = ["dep:swagger-ui"]
 
 actix = ["dep:actix-web"]
-axum = ["dep:axum", "dep:bytes", "dep:tower", "dep:regex"]
+axum = ["dep:axum", "dep:bytes", "dep:tower"]
 
 actix-files = ["actix", "dep:actix-files"]
 
@@ -32,6 +32,7 @@ schemars = "~0.8"
 log = "~0.4"
 serde = { version = "~1", features = ["rc"] }
 serde_json = "~1"
+regex = "~1"
 swagger-ui = { version = "0.1.5", optional = true }
 
 actix-web = { version = "~4", optional = true }
@@ -40,4 +41,3 @@ actix-files = { version = "~0.6", optional = true }
 axum = { version = "~0.7", optional = true }
 bytes = { version = "~1", optional = true }
 tower = { version = "~0.4", optional = true }
-regex = { version = "~1", optional = true } # Converts axum path params to openapi ones

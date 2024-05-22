@@ -6,11 +6,11 @@ use axum::extract::Query;
 use axum::extract::RawForm;
 use axum::Form;
 use axum::Json;
-use log::warn;
-use openapiv3::Parameter;
-use openapiv3::ParameterData;
+use log::{debug, warn};
 use openapiv3::ParameterSchemaOrContent;
 use openapiv3::RequestBody;
+use openapiv3::{Parameter, SchemaKind, Type};
+use openapiv3::{ParameterData, ReferenceOr};
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 
@@ -92,35 +92,63 @@ const _: () = {
 
 impl<T> ShouldBeHandlerArgument for Path<T> {}
 impl<T: DeserializeOwned + JsonSchema> HandlerArgument for Path<T> {
-    fn parameters(gen: &mut SchemaGenerator) -> Vec<Parameter> {
-        let Some((obj, _)) = gen.generate_object::<T>() else {
+    fn parameters(gen: &mut SchemaGenerator, path: &[&str]) -> Vec<Parameter> {
+        let Ok(schema) = gen.generate_refless::<T>() else {
             warn!("Unsupported handler argument: {}", type_name::<Self>());
+            debug!("generate_refless::<{}>() == Err(_)", type_name::<T>());
             return Vec::new();
         };
 
-        obj.properties
-            .into_iter()
-            .map(|(name, schema)| Parameter::Path {
-                parameter_data: ParameterData {
-                    required: obj.required.contains(&name),
-                    name,
-                    description: None,
-                    deprecated: None,
-                    format: ParameterSchemaOrContent::Schema(schema.unbox()),
-                    example: None,
-                    examples: Default::default(),
-                    explode: None,
-                    extensions: Default::default(),
-                },
-                style: Default::default(),
-            })
-            .collect()
+        match schema.schema_kind {
+            SchemaKind::Type(Type::Object(obj)) => obj
+                .properties
+                .into_iter()
+                .map(|(name, schema)| Parameter::Path {
+                    parameter_data: ParameterData {
+                        required: obj.required.contains(&name),
+                        name,
+                        description: None,
+                        deprecated: None,
+                        format: ParameterSchemaOrContent::Schema(schema.unbox()),
+                        example: None,
+                        examples: Default::default(),
+                        explode: None,
+                        extensions: Default::default(),
+                    },
+                    style: Default::default(),
+                })
+                .collect(),
+            _ if path.len() == 1 => {
+                vec![Parameter::Path {
+                    parameter_data: ParameterData {
+                        name: path[0].to_string(),
+                        description: None,
+                        required: !schema.schema_data.nullable,
+                        deprecated: None,
+                        format: ParameterSchemaOrContent::Schema(ReferenceOr::Item(schema)),
+                        example: None,
+                        examples: Default::default(),
+                        explode: None,
+                        extensions: Default::default(),
+                    },
+                    style: Default::default(),
+                }]
+            }
+            _ => {
+                warn!("Unsupported handler argument: {}", type_name::<Self>());
+                debug!(
+                    "generate_refless::<{}>() == Ok({schema:#?})",
+                    type_name::<T>()
+                );
+                Vec::new()
+            }
+        }
     }
 }
 
 impl<T> ShouldBeHandlerArgument for Query<T> {}
 impl<T: DeserializeOwned + JsonSchema> HandlerArgument for Query<T> {
-    fn parameters(gen: &mut SchemaGenerator) -> Vec<Parameter> {
+    fn parameters(gen: &mut SchemaGenerator, _path: &[&str]) -> Vec<Parameter> {
         let Some((obj, _)) = gen.generate_object::<T>() else {
             warn!("Unsupported handler argument: {}", type_name::<Self>());
             return Vec::new();
