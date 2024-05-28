@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use axum::response::Redirect;
+use axum::response::{Html, Redirect};
 use axum::Json;
 use bytes::buf::Chain;
 use bytes::Buf;
@@ -16,11 +16,11 @@ use openapiv3::StatusCode;
 use schemars::JsonSchema;
 use serde::Serialize;
 
-use crate::as_responses::ok_binary;
 use crate::as_responses::ok_empty;
 use crate::as_responses::ok_json;
 use crate::as_responses::ok_text;
 use crate::as_responses::AsResponses;
+use crate::as_responses::{ok_binary, ok_html};
 use crate::internals::SchemaGenerator;
 
 impl AsResponses for &'static str {
@@ -163,5 +163,11 @@ where
 {
     fn responses(_gen: &mut SchemaGenerator) -> Responses {
         ok_binary()
+    }
+}
+
+impl<T> AsResponses for Html<T> {
+    fn responses(_gen: &mut SchemaGenerator) -> Responses {
+        ok_html()
     }
 }

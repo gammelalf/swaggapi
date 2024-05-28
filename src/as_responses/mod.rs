@@ -76,6 +76,16 @@ pub fn ok_text() -> Responses {
     }])
 }
 
+/// Helper function for building a [`Responses`] for a simple `200` html utf-8 response
+pub fn ok_html() -> Responses {
+    simple_responses([SimpleResponse {
+        status_code: StatusCode::Code(200),
+        mime_type: mime::TEXT_HTML_UTF_8,
+        description: "Some html".to_string(),
+        media_type: None,
+    }])
+}
+
 /// Helper function for building a [`Responses`] for a simple `200` binary response
 pub fn ok_binary() -> Responses {
     simple_responses([SimpleResponse {
