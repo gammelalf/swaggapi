@@ -13,6 +13,7 @@ use openapiv3::Paths;
 use openapiv3::ReferenceOr;
 use regex::Regex;
 use schemars::schema::Schema;
+use schemars::JsonSchema;
 
 use crate::internals::HttpMethod;
 use crate::internals::SchemaGenerator;
@@ -62,6 +63,17 @@ pub struct SwaggapiPageBuilderImpl {
 }
 
 impl SwaggapiPageBuilderImpl {
+    /// Add a [`JsonSchema`] to this api page
+    ///
+    /// Might be useful to explicitly include a schema which is used by any handler.
+    pub fn add_schema<T: JsonSchema>(builder: &SwaggapiPageBuilder) {
+        let mut guard = builder.state.lock().unwrap();
+        let state = guard.get_or_insert_with(Default::default);
+        state.last_build = None;
+
+        SchemaGenerator::employ(&mut state.schemas, |gen| gen.generate::<T>());
+    }
+
     /// Add a handler to this api page
     pub fn add_handler(builder: &SwaggapiPageBuilder, handler: &ContextHandler) {
         let mut guard = builder.state.lock().unwrap();

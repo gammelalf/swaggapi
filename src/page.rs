@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use openapiv3::OpenAPI;
+use schemars::JsonSchema;
 
 use crate::internals::AccessSwaggapiPageBuilder;
 use crate::internals::SwaggapiPageBuilderImpl;
@@ -28,10 +29,20 @@ pub trait SwaggapiPage: AccessSwaggapiPageBuilder {
     ///
     /// The internal build process is cached (hence the `Arc`) so feel free to call this eagerly.
     fn openapi(&self) -> Arc<OpenAPI>;
+
+    /// Explicitly adds a schema to this page
+    ///
+    /// This method's use cases are rare,
+    /// because schemas are normally added implicitly with the handlers using them.
+    fn add_schema<S: JsonSchema>(&self);
 }
 impl<P: AccessSwaggapiPageBuilder> SwaggapiPage for P {
     fn openapi(&self) -> Arc<OpenAPI> {
         SwaggapiPageBuilderImpl::build(self.get_builder())
+    }
+
+    fn add_schema<T: JsonSchema>(&self) {
+        SwaggapiPageBuilderImpl::add_schema::<T>(self.get_builder())
     }
 }
 

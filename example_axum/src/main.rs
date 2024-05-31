@@ -70,6 +70,9 @@ pub static API_V2: SwaggapiPageBuilder = SwaggapiPageBuilder::new()
 async fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
 
+    ApiV1.add_schema::<SubmitForm>();
+    (&API_V2).add_schema::<SubmitForm>();
+
     let app = Router::new()
         .merge(
             ApiContext::new()
