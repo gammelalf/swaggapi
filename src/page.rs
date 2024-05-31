@@ -34,15 +34,16 @@ pub trait SwaggapiPage: AccessSwaggapiPageBuilder {
     ///
     /// This method's use cases are rare,
     /// because schemas are normally added implicitly with the handlers using them.
-    fn add_schema<S: JsonSchema>(&self);
+    fn add_schema<S: JsonSchema>(&self) -> &Self;
 }
 impl<P: AccessSwaggapiPageBuilder> SwaggapiPage for P {
     fn openapi(&self) -> Arc<OpenAPI> {
         SwaggapiPageBuilderImpl::build(self.get_builder())
     }
 
-    fn add_schema<T: JsonSchema>(&self) {
-        SwaggapiPageBuilderImpl::add_schema::<T>(self.get_builder())
+    fn add_schema<T: JsonSchema>(&self) -> &Self {
+        SwaggapiPageBuilderImpl::add_schema::<T>(self.get_builder());
+        self
     }
 }
 
