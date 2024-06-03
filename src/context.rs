@@ -285,6 +285,13 @@ const _: () = {
             Self::with_framework_impl(String::new(), Router::new())
         }
 
+        /// Create a new context with a tag
+        ///
+        /// (Shorthand for `ApiContext::new().tag(...)`)
+        pub fn with_tag(tag: &'static str) -> Self {
+            Self::new().tag(tag)
+        }
+
         /// Calls [`Router::nest`] while preserving api information
         pub fn nest(mut self, path: &str, other: ApiContext<Router>) -> Self {
             for mut handler in other.handlers {
