@@ -150,25 +150,27 @@ const _: () = {
             );
             let config = Arc::new(config);
 
+            let normal_path = value.path.trim_end_matches('/');
+
             let mut router = Router::<S>::new()
                 .route(
-                    &format!("{}/", value.path),
+                    &format!("{normal_path}/"),
                     serve_static(|| Redirect::to("index.html?configUrl=config.json")),
                 )
                 .route(
-                    &format!("{}/config.json", value.path),
+                    &format!("{normal_path}/config.json"),
                     serve_static(move || Json(config)),
                 );
             for (_, file_name, builder) in value.pages {
                 router = router.route(
-                    &format!("{}/{file_name}", value.path),
+                    &format!("{normal_path}/{file_name}"),
                     serve_static(|| Json(SwaggapiPageBuilderImpl::build(builder))),
                 );
             }
             for file_name in swagger_ui::Assets::iter() {
                 if let Some(file_content) = swagger_ui::Assets::get(&file_name) {
                     router = router.route(
-                        &format!("{}/{file_name}", value.path),
+                        &format!("{normal_path}/{file_name}"),
                         serve_static(|| Response::new(Body::from(file_content))),
                     );
                 }

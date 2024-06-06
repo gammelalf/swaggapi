@@ -295,7 +295,14 @@ const _: () = {
         /// Calls [`Router::nest`] while preserving api information
         pub fn nest(mut self, path: &str, other: ApiContext<Router>) -> Self {
             for mut handler in other.handlers {
-                handler.path = format!("{path}{}", handler.path);
+                // Code taken from `path_for_nested_route` in `axum/src/routing/path_router.rs`
+                handler.path = if path.ends_with('/') {
+                    format!("{path}{}", handler.path.trim_start_matches('/'))
+                } else if handler.path == "/" {
+                    path.into()
+                } else {
+                    format!("{path}{}", handler.path)
+                };
 
                 self.push_handler(handler);
             }
