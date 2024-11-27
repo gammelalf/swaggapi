@@ -17,6 +17,7 @@ repository = "https://github.com/gammelalf/swaggapi"
 [features]
 default = ["swagger-ui"]
 swagger-ui = ["dep:swagger-ui"]
+tracing-instrument = ["swaggapi-macro/tracing-instrument"]
 
 actix = ["dep:actix-web"]
 axum = ["dep:axum", "dep:bytes", "dep:tower"]

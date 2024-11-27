@@ -10,6 +10,9 @@ repository = "https://github.com/gammelalf/swaggapi"
 [lib]
 proc-macro = true
 
+[features]
+tracing-instrument = []
+
 [dependencies]
 syn = { version = "~2", features = ["full"] }
 quote = "~1"

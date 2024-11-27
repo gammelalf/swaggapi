@@ -59,6 +59,10 @@ pub fn handler(
             Delimiter::Bracket,
             TokenStream::new(),
         )));
+    #[cfg(feature = "tracing-instrument")]
+    let level = keyword
+        .remove(&Ident::new("instrument_level", Span::call_site()))
+        .unwrap_or(TokenTree::Literal(Literal::string("debug")));
 
     if let Some(value) = positional.next() {
         let err = quote_spanned! {value.span()=>
@@ -121,9 +125,18 @@ pub fn handler(
         }
         _ => None,
     });
+
+    #[cfg(not(feature = "tracing-instrument"))]
+    let instrument = quote! {};
+    #[cfg(feature = "tracing-instrument")]
+    let instrument = quote! {
+        #[::tracing::instrument(level = #level)]
+    };
+
     quote! {
         #[allow(non_upper_case_globals, missing_docs)]
         #vis static #func_ident: ::swaggapi::internals::SwaggapiHandler =  {
+            #instrument
             #tokens
 
             const N: usize =  0 #(+ {let _ = stringify!(#argument_type); 1})*;
