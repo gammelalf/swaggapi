@@ -129,9 +129,9 @@ pub fn handler(
     #[cfg(not(feature = "tracing-instrument"))]
     let instrument = quote! {};
     #[cfg(feature = "tracing-instrument")]
-    let instrument = quote! {
+    let instrument = (level.to_string() != "None").then_some(quote! {
         #[::tracing::instrument(level = #level)]
-    };
+    });
 
     quote! {
         #[allow(non_upper_case_globals, missing_docs)]
