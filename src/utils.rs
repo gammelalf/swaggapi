@@ -48,14 +48,12 @@ const _: () = {
 
 #[cfg(feature = "axum")]
 const _: () = {
-    use axum::async_trait;
     use axum::extract::FromRequest;
     use axum::extract::Request;
     use axum::response::IntoResponse;
     use axum::response::Response;
     use axum::Json;
 
-    #[async_trait]
     impl<T, S: Sync> FromRequest<S> for SchemalessJson<T>
     where
         Json<T>: FromRequest<S>,

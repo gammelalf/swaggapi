@@ -86,37 +86,12 @@ impl<T> ApiContext<T> {
     /// Adds the handlers to their api pages and returns the contained framework impl
     fn finish(self) -> T {
         for mut handler in self.handlers {
-            handler.path = framework_path_to_openapi(handler.path);
-
             SwaggapiPageBuilderImpl::add_handler(PageOfEverything.get_builder(), &handler);
             for page in handler.pages.iter() {
                 SwaggapiPageBuilderImpl::add_handler(page, &handler);
             }
         }
-        return self.framework_impl;
-
-        /// Converts the framework's syntax for path parameters into openapi's
-
-        fn framework_path_to_openapi(framework_path: String) -> String {
-            #[cfg(feature = "axum")]
-            {
-                use std::borrow::Cow;
-                use std::sync::OnceLock;
-
-                use regex::Regex;
-
-                static RE: OnceLock<Regex> = OnceLock::new();
-
-                let regex = RE.get_or_init(|| Regex::new(":([^/]*)").unwrap());
-                match regex.replace_all(&framework_path, "{$1}") {
-                    Cow::Borrowed(_) => framework_path,
-                    Cow::Owned(new_path) => new_path,
-                }
-            }
-
-            #[cfg(not(feature = "axum"))]
-            framework_path
-        }
+        self.framework_impl
     }
 
     fn map_framework_impl<U>(self, func: impl FnOnce(T) -> U) -> ApiContext<U> {
@@ -322,8 +297,8 @@ const _: () = {
         /// See [`Router::layer`] for more details.
         pub fn layer<L>(self, layer: L) -> Self
         where
-            L: Layer<Route> + Clone + Send + 'static,
-            L::Service: Service<Request> + Clone + Send + 'static,
+            L: Layer<Route> + Clone + Send + Sync + 'static,
+            L::Service: Service<Request> + Clone + Send + Sync + 'static,
             <L::Service as Service<Request>>::Response: IntoResponse + 'static,
             <L::Service as Service<Request>>::Error: Into<Infallible> + 'static,
             <L::Service as Service<Request>>::Future: Send + 'static,
@@ -336,8 +311,8 @@ const _: () = {
         /// See [`Router::route_layer`] for more details.
         pub fn route_layer<L>(self, layer: L) -> Self
         where
-            L: Layer<Route> + Clone + Send + 'static,
-            L::Service: Service<Request> + Clone + Send + 'static,
+            L: Layer<Route> + Clone + Send + Sync + 'static,
+            L::Service: Service<Request> + Clone + Send + Sync + 'static,
             <L::Service as Service<Request>>::Response: IntoResponse + 'static,
             <L::Service as Service<Request>>::Error: Into<Infallible> + 'static,
             <L::Service as Service<Request>>::Future: Send + 'static,
